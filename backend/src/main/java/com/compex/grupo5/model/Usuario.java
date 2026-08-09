@@ -1,6 +1,6 @@
 package com.compex.grupo5.model;
 
-import com.compex.grupo5.enums.Sexo;
+import com.compex.grupo5.misc.Sexo;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

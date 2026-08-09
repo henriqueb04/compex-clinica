@@ -26,7 +26,7 @@ public class Agendamento {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private Medico medico;
+    private Profissional profissional;
 
     @Type(PostgreSQLRangeType.class)
     @Column(columnDefinition = "tstzrange", nullable = false)
