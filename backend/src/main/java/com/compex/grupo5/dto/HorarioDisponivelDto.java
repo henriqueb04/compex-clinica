@@ -5,6 +5,7 @@ import com.compex.grupo5.model.HorarioDisponivel;
 import io.hypersistence.utils.hibernate.type.range.Range;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 import java.io.Serializable;
 import java.time.DayOfWeek;
@@ -20,7 +21,9 @@ public record HorarioDisponivelDto(
         @NotNull Integer numeroSemana,
         @NotNull ZonedDateTime comeco,
         @NotNull ZonedDateTime fim,
-        @NotBlank String profissional_cpf
+        @NotNull
+        @Pattern(regexp = "^\\d{11}$", message = "Formato de CPF inválido")
+        String profissional_cpf
 ) implements Serializable {
     public HorarioDisponivel toEntity(ProfissionalRepository profissionalRepository) {
         HorarioDisponivel horarioDisponivel = new HorarioDisponivel();
