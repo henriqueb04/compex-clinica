@@ -3,8 +3,7 @@ package com.compex.grupo5.model;
 import io.hypersistence.utils.hibernate.type.range.PostgreSQLRangeType;
 import io.hypersistence.utils.hibernate.type.range.Range;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.Type;
 
 import java.time.DayOfWeek;
@@ -12,13 +11,15 @@ import java.time.ZonedDateTime;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "horarios_disponiveis")
 public class HorarioDisponivel {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(name = "ano", nullable = false)
     private Integer ano;
