@@ -12,8 +12,10 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    public record CamposInvalidos(Map<String, String> errors) {}
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> excecoesValidacao(MethodArgumentNotValidException ex) {
+    public ResponseEntity<CamposInvalidos> excecoesValidacao(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         for (var error : ex.getBindingResult().getAllErrors()) {
             errors.put(
@@ -21,6 +23,6 @@ public class GlobalExceptionHandler {
                     error.getDefaultMessage()
             );
         }
-        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(new CamposInvalidos(errors), HttpStatus.BAD_REQUEST);
     }
 }
