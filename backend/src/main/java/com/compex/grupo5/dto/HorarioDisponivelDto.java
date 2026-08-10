@@ -3,7 +3,6 @@ package com.compex.grupo5.dto;
 import com.compex.grupo5.dao.ProfissionalRepository;
 import com.compex.grupo5.model.HorarioDisponivel;
 import io.hypersistence.utils.hibernate.type.range.Range;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
@@ -26,13 +25,14 @@ public record HorarioDisponivelDto(
         String profissional_cpf
 ) implements Serializable {
     public HorarioDisponivel toEntity(ProfissionalRepository profissionalRepository) {
-        HorarioDisponivel horarioDisponivel = new HorarioDisponivel();
-        horarioDisponivel.setAno(this.ano);
-        horarioDisponivel.setDiaSemana(this.diaSemana);
-        horarioDisponivel.setNumeroSemana(this.numeroSemana);
-        horarioDisponivel.setIntervaloAtendimento(Range.closed(this.comeco, this.fim));
-        horarioDisponivel.setProfissional(profissionalRepository.findByCpfIs(this.profissional_cpf));
-        return horarioDisponivel;
+        return new HorarioDisponivel(
+            this.id,
+            this.ano,
+            this.diaSemana,
+            this.numeroSemana,
+            Range.closed(this.comeco, this.fim),
+            profissionalRepository.findByCpfIs(this.profissional_cpf)
+        );
     }
 
     public static HorarioDisponivelDto fromEntity(HorarioDisponivel horario) {
