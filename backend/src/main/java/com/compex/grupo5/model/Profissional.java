@@ -1,8 +1,7 @@
 package com.compex.grupo5.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.compex.grupo5.misc.Especialidade;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -21,8 +20,9 @@ public class Profissional extends Usuario {
     @Column(nullable = false, unique = true)
     private String crm;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String especialidade;
+    private Especialidade especialidade;
 
     @Column(nullable = false)
     private Integer tempoMedioConsulta;
