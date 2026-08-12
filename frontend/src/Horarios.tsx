@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "./api";
 import { SpinnerIcon } from "@phosphor-icons/react";
+import HorarioPicker from "./components/HorarioPicker";
 
 const DayOfWeek = {
   Sunday: "SUNDAY",
@@ -16,6 +17,9 @@ const DayOfWeek = {
   Friday: "FRIDAY",
   Saturday: "SATURDAY",
 };
+
+const DEFAULT_COLOR = "cyan";
+const SELECTED_COLOR = "yellow";
 
 interface Horario {
   id: number | string;
@@ -33,7 +37,6 @@ const fetchHorarios = async (data: Dayjs, cpf: string) => {
     numeroSemana: data.week(),
     cpf: cpf,
   };
-  console.table(request);
   const horarios = (await api.post("/api/horario/profissional", request))
     .data as Horario[];
   return horarios;
@@ -44,15 +47,17 @@ const toEvent = (h: Horario, nome: string): ScheduleSingleEventData => ({
   title: nome,
   start: dayjs(h.comeco).format("YYYY-MM-DD HH:mm"),
   end: dayjs(h.fim).format("YYYY-MM-DD HH:mm"),
-  color: "blue",
+  color: DEFAULT_COLOR,
 });
 
 function Horarios() {
   const profissional_cpf = "11111111111";
   const profissional_nome = "fulano";
   const [date, setDate] = useState<Dayjs>(dayjs());
+  const [eventos, setEventos] = useState<ScheduleSingleEventData[]>([]);
   const [mudou, setMudou] = useState<boolean>(false);
   const [nNovos, setNNovos] = useState<number>(0);
+  const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
 
   const dataStr = date.format("YYYY-MM-DD");
   const semana = date.week();
@@ -67,8 +72,6 @@ function Horarios() {
     queryFn: async () => await fetchHorarios(date, profissional_cpf),
     gcTime: 20 * 1000, // 20 segundos
   });
-
-  const [eventos, setEventos] = useState<ScheduleSingleEventData[]>([]);
 
   // Atualiza sempre que a API é chamada
   useEffect(() => {
@@ -95,15 +98,27 @@ function Horarios() {
     setEventos([
       ...eventos,
       {
-        id: nNovos.toString(),
+        id: `novo-${nNovos}`,
         start: slotStart,
         end: slotEnd,
         title: profissional_nome,
-        color: "blue",
+        color: DEFAULT_COLOR,
       },
     ]);
-    setNNovos(nNovos + 1);
+    setNNovos((nNovos) => nNovos + 1);
     setMudou(true);
+  };
+
+  const selectEvent = ({ id }: { id: number | string }) => {
+    const i = eventos.findIndex((event) => event.id === id);
+    if (i < 0) return;
+    setSelectedEvent(i);
+    setEventos((eventos) =>
+      eventos.map((e) => ({
+        ...e,
+        color: e.id === id ? SELECTED_COLOR : DEFAULT_COLOR,
+      })),
+    );
   };
 
   if (error) {
@@ -124,7 +139,9 @@ function Horarios() {
             startTime="06:00"
             intervalMinutes={15}
             withAllDaySlots={false}
+            viewSelectProps={{ display: "none" }}
             onTimeSlotClick={novoEvento}
+            onEventClick={selectEvent}
           />
         </ScrollArea>
         <Stack>
@@ -136,9 +153,29 @@ function Horarios() {
             withWeekNumbers
             highlightToday
           />
-          <Stack h="50%">
-            <h3>Seletect</h3>
-            <p>{dataStr}</p>
+          <Stack>
+            {selectedEvent !== null && eventos[selectedEvent] && (
+              <>
+                <HorarioPicker
+                  events={eventos}
+                  i={selectedEvent}
+                  label="Começo"
+                  onChange={setEventos}
+                  target="start"
+                />
+                <HorarioPicker
+                  events={eventos}
+                  i={selectedEvent}
+                  label="Fim"
+                  onChange={setEventos}
+                  target="end"
+                />
+              </>
+            )}
+            <p>
+              {selectedEvent !== null &&
+                `${dayjs(eventos[selectedEvent].start).format()} - ${dayjs(eventos[selectedEvent].end).format()}`}
+            </p>
           </Stack>
         </Stack>
         {isLoading && (
