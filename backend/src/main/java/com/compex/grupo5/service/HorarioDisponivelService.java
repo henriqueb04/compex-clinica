@@ -34,8 +34,8 @@ public class HorarioDisponivelService {
      * Pesquisa por horarios disponíveis de um profissional em uma semana específica
      */
     @Transactional
-    public List<HorarioDisponivel> horariosProfissionalEmSemana(String cpfProfissional, Integer numeroSemana) {
-        return horarioRepository.findByNumeroSemanaAndProfissional_Cpf(numeroSemana, cpfProfissional);
+    public List<HorarioDisponivel> horariosProfissionalEmSemana(String cpfProfissional, Integer ano, Integer numeroSemana) {
+        return horarioRepository.findByAnoAndNumeroSemanaAndProfissional_Cpf(ano, numeroSemana, cpfProfissional);
     }
 
     /*
