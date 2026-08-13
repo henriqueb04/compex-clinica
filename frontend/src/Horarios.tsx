@@ -14,6 +14,7 @@ import {
 import { WeekView, type ScheduleSingleEventData } from "@mantine/schedule";
 import { DatePicker } from "@mantine/dates";
 import { modals } from "@mantine/modals";
+import { notifications } from "@mantine/notifications";
 import { useQuery } from "@tanstack/react-query";
 import { TrashIcon } from "@phosphor-icons/react";
 import dayjs, { type Dayjs } from "dayjs";
@@ -61,6 +62,18 @@ const toEvent = (h: Horario, nome: string): ScheduleSingleEventData => ({
   end: dayjs(h.fim).format("YYYY-MM-DD HH:mm"),
   color: DEFAULT_COLOR,
 });
+
+const hasOverlap = (eventos: ScheduleSingleEventData[]): boolean => {
+  const ranges = eventos
+    .map((e) => ({ start: dayjs(e.start), end: dayjs(e.end) }))
+    .sort((a, b) => a.start.diff(b.start));
+  for (let i = 0; i < ranges.length - 1; i++) {
+    if (ranges[i + 1].start.isBefore(ranges[i].end)) {
+      return true;
+    }
+  }
+  return false;
+};
 
 function Horarios() {
   const profissional_cpf = "11111111111";
@@ -126,6 +139,18 @@ function Horarios() {
       return data;
     },
   });
+
+  const salvar = async () => {
+    if (hasOverlap(eventos)) {
+      notifications.show({
+        title: "Dados incorretos",
+        message: "Os horários possuem intervalos conflitantes!",
+        color: "red",
+      });
+    } else {
+      refetchSalvar()
+    }
+  };
 
   // Atualiza sempre que a API é chamada
   useEffect(() => {
@@ -222,7 +247,7 @@ function Horarios() {
         <Button
           variant="filled"
           disabled={!mudou || salvando}
-          onClick={() => refetchSalvar()}
+          onClick={salvar}
         >
           Salvar
         </Button>
