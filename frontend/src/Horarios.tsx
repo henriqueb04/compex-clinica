@@ -1,33 +1,45 @@
-import dayjs, { Dayjs } from "dayjs";
-import { Box, Center, Flex, ScrollArea, Stack, Title } from "@mantine/core";
+import { useEffect, useState } from "react";
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Center,
+  Flex,
+  Loader,
+  ScrollArea,
+  Stack,
+  Title,
+  Text,
+} from "@mantine/core";
 import { WeekView, type ScheduleSingleEventData } from "@mantine/schedule";
 import { DatePicker } from "@mantine/dates";
-import { useEffect, useState } from "react";
+import { modals } from "@mantine/modals";
 import { useQuery } from "@tanstack/react-query";
+import { TrashIcon } from "@phosphor-icons/react";
+import dayjs, { type Dayjs } from "dayjs";
 import api from "./api";
-import { SpinnerIcon } from "@phosphor-icons/react";
 import HorarioPicker from "./components/HorarioPicker";
 
-const DayOfWeek = {
-  Sunday: "SUNDAY",
-  Monday: "MONDAY",
-  Tuesday: "TUESDAY",
-  Wednesday: "WEDNESDAY",
-  Thursday: "THURSDAY",
-  Friday: "FRIDAY",
-  Saturday: "SATURDAY",
-};
+const DayOfWeek = [
+  "SUNDAY",
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+];
 
 const DEFAULT_COLOR = "cyan";
 const SELECTED_COLOR = "yellow";
 
 interface Horario {
-  id: number | string;
+  id: number | undefined;
   ano: number;
   diaSemana: (typeof DayOfWeek)[keyof typeof DayOfWeek];
   numeroSemana: number;
-  comeco: Date;
-  fim: Date;
+  comeco: string;
+  fim: string;
   profissional_cpf: string;
 }
 
@@ -43,7 +55,7 @@ const fetchHorarios = async (data: Dayjs, cpf: string) => {
 };
 
 const toEvent = (h: Horario, nome: string): ScheduleSingleEventData => ({
-  id: h.id,
+  id: h.id!,
   title: nome,
   start: dayjs(h.comeco).format("YYYY-MM-DD HH:mm"),
   end: dayjs(h.fim).format("YYYY-MM-DD HH:mm"),
@@ -55,22 +67,64 @@ function Horarios() {
   const profissional_nome = "fulano";
   const [date, setDate] = useState<Dayjs>(dayjs());
   const [eventos, setEventos] = useState<ScheduleSingleEventData[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
   const [mudou, setMudou] = useState<boolean>(false);
   const [nNovos, setNNovos] = useState<number>(0);
-  const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
+  const [excluidos, setExcluidos] = useState<number[]>([]);
 
   const dataStr = date.format("YYYY-MM-DD");
-  const semana = date.week();
+  const numeroSemana = date.week();
   const ano = date.year();
+
+  const clearWeekState = () => {
+    setSelectedEvent(null);
+    setNNovos(0);
+    setExcluidos([]);
+    setMudou(false);
+  };
 
   const {
     data: horarios,
     isLoading,
     error,
+    refetch: refetchHorarios,
   } = useQuery({
-    queryKey: ["horarios", profissional_cpf, ano, semana],
+    queryKey: ["horarios", profissional_cpf, ano, numeroSemana],
     queryFn: async () => await fetchHorarios(date, profissional_cpf),
     gcTime: 20 * 1000, // 20 segundos
+  });
+
+  const {
+    isLoading: salvando,
+    error: erroSalvando,
+    refetch: refetchSalvar,
+  } = useQuery({
+    queryKey: ["salvar_horarios"],
+    enabled: false,
+    queryFn: async () => {
+      const salvar: Horario[] = eventos.map((e) => {
+        const start = dayjs(e.start);
+        const end = dayjs(e.end);
+        return {
+          id: typeof e.id === "number" ? e.id : undefined,
+          ano,
+          numeroSemana,
+          comeco: start.format(),
+          fim: end.format(),
+          diaSemana: DayOfWeek[start.day()],
+          profissional_cpf,
+        };
+      }) as Horario[];
+      const data = (
+        await api.post("api/horario/salvar", {
+          horarios: salvar,
+          excluidos: excluidos,
+        })
+      ).data;
+      clearWeekState();
+      await refetchHorarios();
+      return data;
+    },
   });
 
   // Atualiza sempre que a API é chamada
@@ -81,10 +135,30 @@ function Horarios() {
   const selectDate = (date: string | null) => {
     if (date) {
       const novaData = dayjs(date);
-      if (mudou && (novaData.week() !== semana || novaData.year() !== ano)) {
-        // Confirmação
+      if (
+        mudou &&
+        (novaData.week() !== numeroSemana || novaData.year() !== ano)
+      ) {
+        modals.openConfirmModal({
+          title: "Descartar mudanças?",
+          centered: true,
+          children: (
+            <Text>
+              Você realizou mudanças, mas não ainda não salvou. Tem certeza que
+              quer ver outra semana e descartar as mudanças nessa?
+            </Text>
+          ),
+          labels: { confirm: "Sim, descartar", cancel: "Não, manter" },
+          confirmProps: { color: "red" },
+          onConfirm: () => {
+            setDate(novaData);
+            clearWeekState();
+          },
+        });
+      } else {
+        setDate(novaData);
+        clearWeekState();
       }
-      setDate(novaData);
     }
   };
 
@@ -95,21 +169,23 @@ function Horarios() {
     slotStart: string;
     slotEnd: string;
   }) => {
+    const len = eventos.length;
     setEventos([
-      ...eventos,
+      ...eventos.map((e) => ({ ...e, color: DEFAULT_COLOR })),
       {
         id: `novo-${nNovos}`,
+        title: profissional_nome,
         start: slotStart,
         end: slotEnd,
-        title: profissional_nome,
-        color: DEFAULT_COLOR,
+        color: SELECTED_COLOR,
       },
     ]);
     setNNovos((nNovos) => nNovos + 1);
+    setSelectedEvent(len);
     setMudou(true);
   };
 
-  const selectEvent = ({ id }: { id: number | string }) => {
+  const selectEvento = ({ id }: { id: number | string }) => {
     const i = eventos.findIndex((event) => event.id === id);
     if (i < 0) return;
     setSelectedEvent(i);
@@ -121,13 +197,36 @@ function Horarios() {
     );
   };
 
-  if (error) {
-    return `Erro ao buscar horários: ${error.message}`;
+  const deletarEvento = (i: number) => {
+    const evento = eventos[i];
+    if (evento) {
+      setEventos((eventos) => eventos.toSpliced(i, 1));
+      setSelectedEvent(null);
+      setMudou(true);
+      if (typeof evento.id === "number") {
+        setExcluidos((deletados) => [...deletados, evento.id as number]);
+      }
+    }
+  };
+
+  if (error || erroSalvando) {
+    return `Erro ao buscar horários: ${(error || erroSalvando)!.message}`;
   }
 
   return (
     <Stack>
-      <Title order={1}>Definição de horários</Title>
+      <Flex>
+        <Title order={1} style={{ flexGrow: 1 }}>
+          Definição de horários
+        </Title>
+        <Button
+          variant="filled"
+          disabled={!mudou || salvando}
+          onClick={() => refetchSalvar()}
+        >
+          Salvar
+        </Button>
+      </Flex>
       <Flex w={1500} h={800} gap="md" style={{ position: "relative" }}>
         <ScrollArea h={800} scrollbarSize={2} style={{ flexGrow: 1 }}>
           <WeekView
@@ -141,7 +240,7 @@ function Horarios() {
             withAllDaySlots={false}
             viewSelectProps={{ display: "none" }}
             onTimeSlotClick={novoEvento}
-            onEventClick={selectEvent}
+            onEventClick={selectEvento}
           />
         </ScrollArea>
         <Stack>
@@ -155,30 +254,40 @@ function Horarios() {
           />
           <Stack>
             {selectedEvent !== null && eventos[selectedEvent] && (
-              <>
+              <Stack>
                 <HorarioPicker
                   events={eventos}
-                  i={selectedEvent}
+                  index={selectedEvent}
                   label="Começo"
-                  onChange={setEventos}
+                  onChange={(eventos) => {
+                    setEventos(eventos);
+                    setMudou(true);
+                  }}
                   target="start"
                 />
                 <HorarioPicker
                   events={eventos}
-                  i={selectedEvent}
+                  index={selectedEvent}
                   label="Fim"
-                  onChange={setEventos}
+                  onChange={(eventos) => {
+                    setEventos(eventos);
+                    setMudou(true);
+                  }}
                   target="end"
                 />
-              </>
+                <ActionIcon
+                  onClick={() => deletarEvento(selectedEvent)}
+                  variant="outline"
+                  color="red"
+                  aria-label="Deletar horário"
+                >
+                  <TrashIcon size={18} />
+                </ActionIcon>
+              </Stack>
             )}
-            <p>
-              {selectedEvent !== null &&
-                `${dayjs(eventos[selectedEvent].start).format()} - ${dayjs(eventos[selectedEvent].end).format()}`}
-            </p>
           </Stack>
         </Stack>
-        {isLoading && (
+        {(isLoading || salvando) && (
           <Box
             style={{
               position: "absolute",
@@ -189,7 +298,7 @@ function Horarios() {
             }}
           >
             <Center style={{ height: "100%" }}>
-              <SpinnerIcon size={16} />
+              <Loader size={16} />
             </Center>
           </Box>
         )}

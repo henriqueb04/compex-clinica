@@ -1,24 +1,24 @@
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { TimePicker } from "@mantine/dates";
 import type { ScheduleSingleEventData } from "@mantine/schedule";
 
 function HorarioPicker({
   events,
-  i,
+  index,
   onChange,
   label,
   target,
 }: {
   events: ScheduleSingleEventData[];
-  i: number;
+  index: number;
   onChange: (
     callback: (events: ScheduleSingleEventData[]) => ScheduleSingleEventData[],
   ) => void;
   label: string;
   target: "start" | "end";
 }) {
-  const start = dayjs(events[i].start);
-  const end = dayjs(events[i].end);
+  const start = dayjs(events[index].start);
+  const end = dayjs(events[index].end);
   const targetTime = target === "start" ? start : end;
   return (
     <TimePicker
@@ -38,18 +38,20 @@ function HorarioPicker({
         if (
           target === "start" ? newTime.isBefore(end) : newTime.isAfter(start)
         ) {
-          onChange((events) => {
-            return [
-              ...events.toSpliced(i),
-              {
-                ...events[i],
-                ...{
-                  start: target == "start" ? newTime.format() : start.format(),
-                  end: target == "end" ? newTime.format() : end.format(),
-                },
-              },
-            ] as ScheduleSingleEventData[];
-          });
+          onChange((events) =>
+            events.map((evento, i) =>
+              index == i
+                ? {
+                    ...evento,
+                    ...{
+                      start:
+                        target == "start" ? newTime.format() : start.format(),
+                      end: target == "end" ? newTime.format() : end.format(),
+                    },
+                  }
+                : evento,
+            ),
+          );
         }
       }}
     />
