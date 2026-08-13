@@ -261,7 +261,7 @@ function Horarios() {
         </Button>
       </Flex>
       <Flex w={1500} h={800} gap="md" style={{ position: "relative" }}>
-        <ScrollArea h={800} scrollbarSize={2} style={{ flexGrow: 1 }}>
+        <ScrollArea h={800} scrollbarSize={2} style={{ flexGrow: 1, paddingRight: 4 }}>
           <WeekView
             w="100%"
             date={dataStr}
