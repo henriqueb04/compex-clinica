@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import {
   BrowserRouter,
   Route,
@@ -13,11 +14,11 @@ import {
   NavLink as MantineLink,
   type NavLinkProps,
 } from "@mantine/core";
-import { HouseIcon, ListBulletsIcon } from "@phosphor-icons/react";
+import { ClockIcon, HouseIcon, ListBulletsIcon } from "@phosphor-icons/react";
 import Home from "./Home";
 import "./App.css";
 import Listagem from "./Listagem";
-import type { ComponentProps } from "react";
+import Horarios from "./Horarios";
 
 function NavLink({
   href,
@@ -51,21 +52,24 @@ function App() {
             label="Listagem"
             leftSection={<ListBulletsIcon size={16} />}
           />
+          <NavLink
+            href="/horarios"
+            label="Definir horários de atendimento"
+            leftSection={<ClockIcon size={16} />}
+          />
         </Drawer>
 
         <Center className="centro">
           <Card withBorder>
-
             <Routes>
               <Route path="/">
                 <Route index element={<Home />} />
                 <Route path="/listagem" element={<Listagem />} />
+                <Route path="/horarios" element={<Horarios />} />
               </Route>
             </Routes>
-
           </Card>
         </Center>
-
       </BrowserRouter>
     </>
   );
