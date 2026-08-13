@@ -3,9 +3,11 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MantineProvider } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
+import { Notifications } from "@mantine/notifications"
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/schedule/styles.css";
+import "@mantine/notifications/styles.css";
 import dayjs from "dayjs";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 import timezone from "dayjs/plugin/timezone";
@@ -25,6 +27,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <MantineProvider defaultColorScheme="light">
+        <Notifications />
         <ModalsProvider>
           <App />
         </ModalsProvider>
