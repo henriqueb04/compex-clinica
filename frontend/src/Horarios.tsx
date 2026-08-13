@@ -20,6 +20,7 @@ import { TrashIcon } from "@phosphor-icons/react";
 import dayjs, { type Dayjs } from "dayjs";
 import api from "./api";
 import HorarioPicker from "./components/HorarioPicker";
+import ProfissionalPicker, { type Profissional } from "./components/ProfissionalPicker";
 
 const DayOfWeek = [
   "SUNDAY",
@@ -76,14 +77,13 @@ const hasOverlap = (eventos: ScheduleSingleEventData[]): boolean => {
 };
 
 function Horarios() {
-  const profissional_cpf = "11111111111";
-  const profissional_nome = "fulano";
   const [date, setDate] = useState<Dayjs>(dayjs());
   const [eventos, setEventos] = useState<ScheduleSingleEventData[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
   const [mudou, setMudou] = useState<boolean>(false);
   const [nNovos, setNNovos] = useState<number>(0);
   const [excluidos, setExcluidos] = useState<number[]>([]);
+  const [profissional, setProfissional] = useState<Profissional | null>(null)
 
   const dataStr = date.format("YYYY-MM-DD");
   const numeroSemana = date.week();
@@ -98,18 +98,20 @@ function Horarios() {
 
   const {
     data: horarios,
-    isLoading,
-    error,
+    isLoading: horariosIsLoading,
+    isError: horariosIsError,
+    error: horariosError,
     refetch: refetchHorarios,
   } = useQuery({
-    queryKey: ["horarios", profissional_cpf, ano, numeroSemana],
-    queryFn: async () => await fetchHorarios(date, profissional_cpf),
+    queryKey: ["horarios", profissional?.cpf, ano, numeroSemana],
+    queryFn: async () => (profissional ? await fetchHorarios(date, profissional!.cpf) : []),
     gcTime: 20 * 1000, // 20 segundos
   });
 
   const {
-    isLoading: salvando,
-    error: erroSalvando,
+    isLoading: salvarIsLoading,
+    isError: salvarIsError,
+    error: salvarError,
     refetch: refetchSalvar,
   } = useQuery({
     queryKey: ["salvar_horarios"],
@@ -125,7 +127,7 @@ function Horarios() {
           comeco: start.format(),
           fim: end.format(),
           diaSemana: DayOfWeek[start.day()],
-          profissional_cpf,
+          profissional_cpf: profissional!.cpf,
         };
       }) as Horario[];
       const data = (
@@ -148,13 +150,13 @@ function Horarios() {
         color: "red",
       });
     } else {
-      refetchSalvar()
+      refetchSalvar();
     }
   };
 
-  // Atualiza sempre que a API é chamada
+  // Atualiza eventos sempre que a API é chamada
   useEffect(() => {
-    setEventos(horarios?.map((h) => toEvent(h, profissional_nome)) ?? []);
+    setEventos(horarios?.map((h) => toEvent(h, profissional?.nomeCompleto ?? "")) ?? []);
   }, [horarios]);
 
   const selectDate = (date: string | null) => {
@@ -194,20 +196,22 @@ function Horarios() {
     slotStart: string;
     slotEnd: string;
   }) => {
-    const len = eventos.length;
-    setEventos([
-      ...eventos.map((e) => ({ ...e, color: DEFAULT_COLOR })),
-      {
-        id: `novo-${nNovos}`,
-        title: profissional_nome,
-        start: slotStart,
-        end: slotEnd,
-        color: SELECTED_COLOR,
-      },
-    ]);
-    setNNovos((nNovos) => nNovos + 1);
-    setSelectedEvent(len);
-    setMudou(true);
+    if (profissional) {
+      const len = eventos.length;
+      setEventos([
+        ...eventos.map((e) => ({ ...e, color: DEFAULT_COLOR })),
+        {
+          id: `novo-${nNovos}`,
+          title: profissional.nomeCompleto,
+          start: slotStart,
+          end: slotEnd,
+          color: SELECTED_COLOR,
+        },
+      ]);
+      setNNovos((nNovos) => nNovos + 1);
+      setSelectedEvent(len);
+      setMudou(true);
+    }
   };
 
   const selectEvento = ({ id }: { id: number | string }) => {
@@ -234,21 +238,25 @@ function Horarios() {
     }
   };
 
-  if (error || erroSalvando) {
-    return `Erro ao buscar horários: ${(error || erroSalvando)!.message}`;
-  }
+  useEffect(() => {
+    const err = salvarError || horariosError;
+    if (err) {
+      notifications.show({
+        title: "Erro",
+        message: `${err.message}${(err.cause !== undefined && ` "${err.cause}"`) || ""}`,
+        color: "red",
+      });
+    }
+  }, [salvarIsError, salvarError, horariosIsError, horariosError]);
 
   return (
     <Stack>
-      <Flex>
+      <Flex gap={8}>
         <Title order={1} style={{ flexGrow: 1 }}>
           Definição de horários
         </Title>
-        <Button
-          variant="filled"
-          disabled={!mudou || salvando}
-          onClick={salvar}
-        >
+        <ProfissionalPicker value={profissional} onChange={setProfissional} />
+        <Button variant="filled" disabled={!mudou || salvarIsLoading} onClick={salvar}>
           Salvar
         </Button>
       </Flex>
@@ -312,7 +320,7 @@ function Horarios() {
             )}
           </Stack>
         </Stack>
-        {(isLoading || salvando) && (
+        {(horariosIsLoading || salvarIsLoading) && (
           <Box
             style={{
               position: "absolute",
