@@ -1,5 +1,6 @@
 package com.compex.grupo5.controller;
 
+import com.compex.grupo5.exception.TimeRangeConflictException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -52,6 +53,15 @@ public class GlobalExceptionHandler {
     ) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
+                .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(TimeRangeConflictException.class)
+    public ResponseEntity<String> temposConflitantes(
+            TimeRangeConflictException ex
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
                 .body(ex.getMessage());
     }
 }

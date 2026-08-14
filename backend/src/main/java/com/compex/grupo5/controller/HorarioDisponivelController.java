@@ -21,7 +21,7 @@ public class HorarioDisponivelController {
     private final HorarioDisponivelService horarioService;
 
     public record Salvar(
-            @NotNull @Valid List<HorarioDisponivelDto> horarios,
+            @Valid List<HorarioDisponivelDto> horarios,
             List<Long> excluidos
     ) {}
     @PostMapping("/salvar")
