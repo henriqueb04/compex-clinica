@@ -1,7 +1,7 @@
 package com.compex.grupo5.dto;
 
-import com.compex.grupo5.dao.ProfissionalRepository;
 import com.compex.grupo5.model.HorarioDisponivel;
+import com.compex.grupo5.model.Profissional;
 import io.hypersistence.utils.hibernate.type.range.Range;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -24,14 +24,14 @@ public record HorarioDisponivelDto(
         @Pattern(regexp = "^\\d{11}$", message = "Formato de CPF inválido")
         String profissional_cpf
 ) implements Serializable {
-    public HorarioDisponivel toEntity(ProfissionalRepository profissionalRepository) {
+    public HorarioDisponivel toEntity(Profissional profissional) {
         return new HorarioDisponivel(
             this.id,
             this.ano,
             this.diaSemana,
             this.numeroSemana,
             Range.closed(this.comeco, this.fim),
-            profissionalRepository.findByCpfIs(this.profissional_cpf)
+            profissional
         );
     }
 
