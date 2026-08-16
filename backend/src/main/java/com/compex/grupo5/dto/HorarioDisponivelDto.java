@@ -9,6 +9,8 @@ import jakarta.validation.constraints.Pattern;
 import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
+import java.time.temporal.WeekFields;
+import java.util.Locale;
 
 /**
  * DTO for {@link com.compex.grupo5.model.HorarioDisponivel}
@@ -27,10 +29,10 @@ public record HorarioDisponivelDto(
     public HorarioDisponivel toEntity(Profissional profissional) {
         return new HorarioDisponivel(
             this.id,
-            this.ano,
-            this.diaSemana,
-            this.numeroSemana,
-            Range.closed(this.comeco, this.fim),
+            this.comeco.getYear(),
+            this.comeco.getDayOfWeek(),
+            this.comeco.get(WeekFields.of(Locale.US).weekOfYear()),
+            Range.closedOpen(this.comeco, this.fim),
             profissional
         );
     }
