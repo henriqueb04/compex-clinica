@@ -5,17 +5,12 @@ import com.compex.grupo5.dao.ClienteRepository;
 import com.compex.grupo5.dao.HorarioDisponivelRepository;
 import com.compex.grupo5.dao.ProfissionalRepository;
 import com.compex.grupo5.dto.AgendamentoDto;
-import com.compex.grupo5.exception.AgendamentoOutOfBounds;
-import com.compex.grupo5.exception.ProfissionalNotFoundException;
-import com.compex.grupo5.exception.TimeRangeConflictException;
-import com.compex.grupo5.exception.AgendamentoNotFoundException;
-import com.compex.grupo5.exception.BusinessException;
+import com.compex.grupo5.exception.*;
 import com.compex.grupo5.misc.StatusAgendamento;
 import com.compex.grupo5.model.Agendamento;
 import com.compex.grupo5.model.Cliente;
 import com.compex.grupo5.model.HorarioDisponivel;
 import com.compex.grupo5.model.Profissional;
-import io.hypersistence.utils.hibernate.type.range.Range;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 
@@ -45,6 +39,7 @@ public class AgendamentoService {
     public List<Agendamento> listarProximos() {
         return agendamentoRepository.findProximosAgendamentos(ZonedDateTime.now());
     }
+
     /*
      * Retorna todos os agendamentos de um cliente pelo CPF,
      */
@@ -60,6 +55,7 @@ public class AgendamentoService {
     public List<Agendamento> listarPorProfissional(String cpf) {
         return agendamentoRepository.findByProfissionalCpf(cpf);
     }
+
     /*
      * Cancela um agendamento pelo ID.
      * - O registro não é deletado — apenas o status é alterado
@@ -74,7 +70,7 @@ public class AgendamentoService {
         if (agendamento.getStatusAgendamento() != StatusAgendamento.AGENDADO) {
             throw new BusinessException(
                     "Apenas agendamentos com status AGENDADO podem ser cancelados. " +
-                            "Status atual: " + agendamento.getStatusAgendamento()
+                    "Status atual: " + agendamento.getStatusAgendamento()
             );
         }
 
@@ -97,84 +93,47 @@ public class AgendamentoService {
                 cpfProfissional, ano,
                 numeroSemana
         );
-        Integer tempoMedio = profissional.getTempoMedioConsulta();
-        List<Range<ZonedDateTime>> validos = new ArrayList<>();
         List<AgendamentoDto> res = new ArrayList<>();
         // Gera lista de horários livres, evitando sobreposição com os que já foram agendados
         for (var horario : horarios) {
+            ZonedDateTime inicioTurno = horario.getIntervaloAtendimento().lower();
+            ZonedDateTime fimTurno = horario.getIntervaloAtendimento().upper();
+
             // Pega os já agendados no intervalo de um horário de atendimento
             List<Agendamento> agendados = agendamentoRepository.agendamentosEmIntervalo(
                     cpfProfissional, horario.getIntervaloAtendimento().lower(),
                     horario.getIntervaloAtendimento().upper()
             );
-            // O(m)
-            List<Timestamp> tempos = new ArrayList<>();
-            for (var a : agendados) {
-                tempos.add(new Timestamp(a.getId(), a.getIntervaloAtendimento().lower(), true, true));
-                tempos.add(new Timestamp(a.getId(), a.getIntervaloAtendimento().upper(), false, true));
-            }
-            // Horários livres
-            // O(n)
-            var tempo = horario.getIntervaloAtendimento().lower();
-            ArrayList<Range<ZonedDateTime>> possiveis = new ArrayList<>();
-            long i = 0;
-            while (tempo.isBefore(horario.getIntervaloAtendimento().upper())) {
-                ZonedDateTime fim = tempo.plusMinutes(tempoMedio);
-                if (fim.isAfter(horario.getIntervaloAtendimento().upper())) {
+
+            ZonedDateTime tempoAtual = inicioTurno;
+            while (!tempoAtual.isAfter(fimTurno)) {
+                ZonedDateTime inicioSlot = tempoAtual;
+                ZonedDateTime fimSlot = tempoAtual.plusMinutes(profissional.getTempoMedioConsulta());
+                if (fimSlot.isAfter(fimTurno)) {
                     break;
                 }
-                possiveis.add(Range.closedOpen(tempo, fim));
-                tempos.add(new Timestamp(i, tempo, true, false));
-                tempos.add(new Timestamp(i, fim, false, false));
-                tempo = fim.plusMinutes(GAP_AGENDAMENTOS);
-                i++;
-            }
-            // Gera os horários livres sem conflitos para esse horário de atendimento
-            tempos.sort(Comparator.comparing(Timestamp::tempo));
-            boolean agendado = false;
-            boolean aberto = false;
-            boolean valido = true;
-            // O(n+m) Sweep-line
-            for (var t : tempos) {
-                if (!t.agendado) {
-                    // Possíveis
-                    if (t.comeco) {
-                        aberto = true;
-                    } else {
-                        aberto = false;
-                        if (valido) {
-                            validos.add(possiveis.get(t.id.intValue()));
-                        }
-                        if (!agendado) {
-                            valido = true;
-                        }
-                    }
-                } else {
-                    // Agendados
-                    if (t.comeco) {
-                        agendado = true;
-                        valido = false;
-                    } else {
-                        agendado = false;
-                        valido = !aberto;
-                    }
+                // Se não houver conflitos com nenhum que já esteja agendado
+                if (agendados.stream().noneMatch(a ->
+                        a.getIntervaloAtendimento().lower().isBefore(fimSlot) &&
+                        a.getIntervaloAtendimento().upper().isAfter(inicioSlot))) {
+                    res.add(new AgendamentoDto(
+                            null,
+                            null,
+                            null,
+                            cpfProfissional,
+                            profissional.getNomeCompleto(),
+                            inicioSlot,
+                            fimSlot,
+                            null
+                    ));
                 }
+                tempoAtual = fimSlot.plusMinutes(GAP_AGENDAMENTOS);
             }
         }
         res.addAll(agendamentoRepository.agendadosByAnoESemana(ano, numeroSemana)
                 .stream()
                 .map(AgendamentoDto::fromEntity)
                 .toList());
-        res.addAll(validos.stream().map(h -> new AgendamentoDto(
-                null,
-                null,
-                null,
-                cpfProfissional,
-                profissional.getNomeCompleto(),
-                h.lower(),
-                h.upper(),
-                null
-        )).toList());
         return res;
     }
 
@@ -219,17 +178,6 @@ public class AgendamentoService {
             throw new TimeRangeConflictException(profissional.getCpf(), agendamentoDto.comeco(), agendamentoDto.fim());
         }
         return agendamentoRepository.save(agendamentoDto.toEntity(profissional, cliente));
-    }
-
-    /*
-     * Estrutura de apoio para a geração de horários livres
-     */
-    record Timestamp(
-            Long id,
-            ZonedDateTime tempo,
-            boolean comeco,
-            boolean agendado
-    ) {
     }
 }
 
