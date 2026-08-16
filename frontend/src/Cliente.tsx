@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
     Button,
     Modal,
@@ -30,6 +31,9 @@ function Cliente() {
         useDisclosure(false);
 
     const queryClient = useQueryClient();
+
+    const [clienteEditando, setClienteEditando] =
+        useState<Cliente | null>(null);
 
     const form = useForm({
         initialValues: {
@@ -120,27 +124,107 @@ function Cliente() {
         }
     };
 
+    const abrirEdicao = (cliente: Cliente) => {
+        setClienteEditando(cliente);
+
+        form.setValues({
+            cpf: cliente.cpf,
+            nomeCompleto: cliente.nomeCompleto,
+            dataNascimento: cliente.dataNascimento,
+            sexo: cliente.sexo,
+            endereco: cliente.endereco,
+            telefone: cliente.telefone,
+        });
+
+        abrirModal();
+    };
+
+    const atualizarCliente = async (valores: typeof form.values) => {
+        if (!clienteEditando) {
+            return;
+        }
+
+        try {
+            await api.put(`/clientes/${clienteEditando.cpf}`, {
+                cpf: valores.cpf,
+                nomeCompleto: valores.nomeCompleto,
+                dataNascimento: valores.dataNascimento,
+                sexo: valores.sexo,
+                endereco: valores.endereco,
+                telefone: valores.telefone,
+            });
+
+            notifications.show({
+                title: "Cliente atualizado",
+                message: "Os dados do cliente foram atualizados com sucesso.",
+                color: "green",
+            });
+
+            form.reset();
+            setClienteEditando(null);
+            fecharModal();
+
+            await queryClient.invalidateQueries({
+                queryKey: ["clientes"],
+            });
+        } catch (error: any) {
+            const mensagem =
+                error.response?.data?.message ||
+                error.response?.data ||
+                "Não foi possível atualizar o cliente.";
+
+            notifications.show({
+                title: "Erro ao atualizar cliente",
+                message: mensagem,
+                color: "red",
+            });
+        }
+    };
+
+    const fecharFormulario = () => {
+        form.reset();
+        setClienteEditando(null);
+        fecharModal();
+    };
+
     return (
         <Stack>
             <Title order={1}>Clientes</Title>
 
             <Text>Gerenciamento de clientes</Text>
 
-            <Button onClick={abrirModal}>
+            <Button
+                onClick={() => {
+                    setClienteEditando(null);
+                    form.reset();
+                    abrirModal();
+                }}
+            >
                 Novo cliente
             </Button>
 
             <Modal
                 opened={modalAberto}
-                onClose={fecharModal}
-                title="Novo cliente"
+                onClose={fecharFormulario}
+                title={
+                    clienteEditando
+                        ? "Editar cliente"
+                        : "Novo cliente"
+                }
                 centered
             >
-                <form onSubmit={form.onSubmit(cadastrarCliente)}>
+                <form
+                    onSubmit={form.onSubmit(
+                        clienteEditando
+                            ? atualizarCliente
+                            : cadastrarCliente
+                    )}
+                >
                     <Stack>
                         <TextInput
                             label="CPF"
                             placeholder="Digite os 11 dígitos do CPF"
+                            disabled={clienteEditando !== null}
                             {...form.getInputProps("cpf")}
                         />
 
@@ -189,7 +273,9 @@ function Cliente() {
                         />
 
                         <Button type="submit">
-                            Cadastrar
+                            {clienteEditando
+                                ? "Salvar alterações"
+                                : "Cadastrar"}
                         </Button>
                     </Stack>
                 </form>
@@ -213,6 +299,7 @@ function Cliente() {
                             <Table.Th>Sexo</Table.Th>
                             <Table.Th>Endereço</Table.Th>
                             <Table.Th>Telefone</Table.Th>
+                            <Table.Th>Ações</Table.Th>
                         </Table.Tr>
                     </Table.Thead>
 
@@ -225,6 +312,15 @@ function Cliente() {
                                 <Table.Td>{cliente.sexo}</Table.Td>
                                 <Table.Td>{cliente.endereco}</Table.Td>
                                 <Table.Td>{cliente.telefone}</Table.Td>
+                                <Table.Td>
+                                    <Button
+                                        size="xs"
+                                        variant="light"
+                                        onClick={() => abrirEdicao(cliente)}
+                                    >
+                                        Editar
+                                    </Button>
+                                </Table.Td>
                             </Table.Tr>
                         ))}
                     </Table.Tbody>
