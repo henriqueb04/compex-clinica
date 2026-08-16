@@ -2,17 +2,18 @@ import { useState } from "react";
 import {
     Button,
     Modal,
+    NumberInput,
     Select,
     Stack,
     Table,
     Text,
     TextInput,
     Title,
-    NumberInput,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
-import { useQuery } from "@tanstack/react-query";
+import { notifications } from "@mantine/notifications";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "./api";
 
 type Sexo = "MASCULINO" | "FEMININO" | "OUTRO";
@@ -38,12 +39,66 @@ interface Profissional {
     tempoMedioConsulta: number;
 }
 
+const formatarCpf = (valor: string) => {
+    const numeros = valor.replace(/\D/g, "").slice(0, 11);
+
+    if (numeros.length <= 3) return numeros;
+    if (numeros.length <= 6) {
+        return `${numeros.slice(0, 3)}.${numeros.slice(3)}`;
+    }
+    if (numeros.length <= 9) {
+        return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(6)}`;
+    }
+
+    return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(
+        6,
+        9,
+    )}-${numeros.slice(9)}`;
+};
+
+const formatarTelefone = (valor: string) => {
+    const numeros = valor.replace(/\D/g, "").slice(0, 11);
+
+    if (numeros.length <= 2) return numeros;
+    if (numeros.length <= 3) {
+        return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
+    }
+    if (numeros.length <= 7) {
+        return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 3)} ${numeros.slice(
+            3,
+        )}`;
+    }
+
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 3)} ${numeros.slice(
+        3,
+        7,
+    )}-${numeros.slice(7)}`;
+};
+
+const validarDataNascimento = (valor: string) => {
+    if (!valor) return "Data de nascimento é obrigatória";
+
+    const data = new Date(`${valor}T00:00:00`);
+
+    if (Number.isNaN(data.getTime())) {
+        return "Data de nascimento inválida";
+    }
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    if (data > hoje) {
+        return "Data de nascimento não pode ser futura";
+    }
+
+    return null;
+};
+
 function Profissional() {
     const [modalAberto, { open: abrirModal, close: fecharModal }] =
         useDisclosure(false);
 
-    const [profissionalEditando, setProfissionalEditando] =
-        useState<Profissional | null>(null);
+    const queryClient = useQueryClient();
 
     const form = useForm({
         initialValues: {
@@ -57,11 +112,48 @@ function Profissional() {
             especialidade: "" as Especialidade | "",
             tempoMedioConsulta: 0,
         },
+
+        validate: {
+            cpf: (valor) =>
+                valor.replace(/\D/g, "").length !== 11
+                    ? "CPF deve conter 11 dígitos"
+                    : null,
+
+            nomeCompleto: (valor) =>
+                valor.trim().length === 0
+                    ? "Nome completo é obrigatório"
+                    : null,
+
+            dataNascimento: validarDataNascimento,
+
+            sexo: (valor) =>
+                !valor ? "Sexo é obrigatório" : null,
+
+            endereco: (valor) =>
+                valor.trim().length === 0
+                    ? "Endereço é obrigatório"
+                    : null,
+
+            telefone: (valor) =>
+                valor.replace(/\D/g, "").length < 10
+                    ? "Telefone inválido"
+                    : null,
+
+            crm: (valor) =>
+                valor.trim().length === 0
+                    ? "CRM é obrigatório"
+                    : null,
+
+            especialidade: (valor) =>
+                !valor ? "Especialidade é obrigatória" : null,
+
+            tempoMedioConsulta: (valor) =>
+                !valor || valor <= 0
+                    ? "Tempo médio de consulta deve ser maior que zero"
+                    : null,
+        },
     });
 
-    /*
-     * Busca todos os profissionais.
-     */
     const {
         data: profissionais,
         isLoading,
@@ -75,12 +167,64 @@ function Profissional() {
         },
     });
 
-    /*
-     * Fecha o formulário e limpa os dados.
-     */
+    const cadastrarProfissional = useMutation({
+        mutationFn: async () => {
+            const valores = form.values;
+
+            const profissional = {
+                cpf: valores.cpf.replace(/\D/g, ""),
+                nomeCompleto: valores.nomeCompleto,
+                dataNascimento: valores.dataNascimento,
+                sexo: valores.sexo,
+                endereco: valores.endereco,
+                telefone: valores.telefone.replace(/\D/g, ""),
+                crm: valores.crm,
+                especialidade: valores.especialidade,
+                tempoMedioConsulta: valores.tempoMedioConsulta,
+            };
+
+            return api.post("/profissionais", profissional);
+        },
+
+        onSuccess: () => {
+            notifications.show({
+                title: "Sucesso",
+                message: "Profissional cadastrado com sucesso!",
+                color: "green",
+            });
+
+            form.reset();
+            fecharModal();
+
+            queryClient.invalidateQueries({
+                queryKey: ["profissionais"],
+            });
+        },
+
+        onError: (error: any) => {
+            const mensagem =
+                error?.response?.data?.message ||
+                error?.response?.data?.erro ||
+                "Não foi possível cadastrar o profissional.";
+
+            notifications.show({
+                title: "Erro",
+                message: mensagem,
+                color: "red",
+            });
+        },
+    });
+
+    const cadastrar = () => {
+        const resultado = form.validate();
+
+        if (!resultado.hasErrors) {
+            cadastrarProfissional.mutate();
+        }
+    };
+
     const fecharFormulario = () => {
         form.reset();
-        setProfissionalEditando(null);
         fecharModal();
     };
 
@@ -92,7 +236,6 @@ function Profissional() {
 
             <Button
                 onClick={() => {
-                    setProfissionalEditando(null);
                     form.reset();
                     abrirModal();
                 }}
@@ -103,117 +246,135 @@ function Profissional() {
             <Modal
                 opened={modalAberto}
                 onClose={fecharFormulario}
-                title={
-                    profissionalEditando
-                        ? "Editar profissional"
-                        : "Novo profissional"
-                }
+                title="Novo profissional"
                 centered
             >
-                <form>
-                    <Stack>
-                        <TextInput
-                            label="CPF"
-                            placeholder="123.456.789-01"
-                        />
+                <Stack>
+                    <TextInput
+                        label="CPF"
+                        placeholder="000.000.000-00"
+                        value={formatarCpf(form.values.cpf)}
+                        onChange={(event) => {
+                            form.setFieldValue(
+                                "cpf",
+                                event.currentTarget.value.replace(/\D/g, ""),
+                            );
+                        }}
+                        error={form.errors.cpf}
+                        maxLength={14}
+                    />
 
-                        <TextInput
-                            label="Nome completo"
-                            placeholder="Digite o nome completo"
-                        />
+                    <TextInput
+                        label="Nome completo"
+                        placeholder="Digite o nome completo"
+                        {...form.getInputProps("nomeCompleto")}
+                    />
 
-                        <TextInput
-                            label="Data de nascimento"
-                            type="date"
-                        />
+                    <TextInput
+                        label="Data de nascimento"
+                        type="date"
+                        {...form.getInputProps("dataNascimento")}
+                    />
 
-                        <Select
-                            label="Sexo"
-                            placeholder="Selecione o sexo"
-                            data={[
-                                {
-                                    value: "MASCULINO",
-                                    label: "Masculino",
-                                },
-                                {
-                                    value: "FEMININO",
-                                    label: "Feminino",
-                                },
-                                {
-                                    value: "OUTRO",
-                                    label: "Outro",
-                                },
-                            ]}
-                        />
+                    <Select
+                        label="Sexo"
+                        placeholder="Selecione o sexo"
+                        data={[
+                            {
+                                value: "MASCULINO",
+                                label: "Masculino",
+                            },
+                            {
+                                value: "FEMININO",
+                                label: "Feminino",
+                            },
+                            {
+                                value: "OUTRO",
+                                label: "Outro",
+                            },
+                        ]}
+                        {...form.getInputProps("sexo")}
+                    />
 
-                        <TextInput
-                            label="Endereço"
-                            placeholder="Digite o endereço"
-                        />
+                    <TextInput
+                        label="Endereço"
+                        placeholder="Digite o endereço"
+                        {...form.getInputProps("endereco")}
+                    />
 
-                        <TextInput
-                            label="Telefone"
-                            placeholder="(81) 9 9999-9999"
-                        />
+                    <TextInput
+                        label="Telefone"
+                        placeholder="(81) 9 9999-9999"
+                        value={formatarTelefone(form.values.telefone)}
+                        onChange={(event) => {
+                            form.setFieldValue(
+                                "telefone",
+                                event.currentTarget.value.replace(/\D/g, ""),
+                            );
+                        }}
+                        error={form.errors.telefone}
+                        maxLength={16}
+                    />
 
-                        <TextInput
-                            label="CRM"
-                            placeholder="Digite o CRM"
-                        />
+                    <TextInput
+                        label="CRM"
+                        placeholder="Digite o CRM"
+                        {...form.getInputProps("crm")}
+                    />
 
-                        <Select
-                            label="Especialidade"
-                            placeholder="Selecione a especialidade"
-                            data={[
-                                {
-                                    value: "ESTETICISTA",
-                                    label: "Esteticista",
-                                },
-                                {
-                                    value: "BIOMEDICO",
-                                    label: "Biomédico",
-                                },
-                                {
-                                    value: "ENFERMEIRO",
-                                    label: "Enfermeiro",
-                                },
-                                {
-                                    value: "FISIOTERAPEUTA",
-                                    label: "Fisioterapeuta",
-                                },
-                                {
-                                    value: "NUTRICIONISTA",
-                                    label: "Nutricionista",
-                                },
-                                {
-                                    value: "DERMATOLOGISTA",
-                                    label: "Dermatologista",
-                                },
-                                {
-                                    value: "CIRURGIAO_PLASTICO",
-                                    label: "Cirurgião Plástico",
-                                },
-                            ]}
-                        />
+                    <Select
+                        label="Especialidade"
+                        placeholder="Selecione a especialidade"
+                        data={[
+                            {
+                                value: "ESTETICISTA",
+                                label: "Esteticista",
+                            },
+                            {
+                                value: "BIOMEDICO",
+                                label: "Biomédico",
+                            },
+                            {
+                                value: "ENFERMEIRO",
+                                label: "Enfermeiro",
+                            },
+                            {
+                                value: "FISIOTERAPEUTA",
+                                label: "Fisioterapeuta",
+                            },
+                            {
+                                value: "NUTRICIONISTA",
+                                label: "Nutricionista",
+                            },
+                            {
+                                value: "DERMATOLOGISTA",
+                                label: "Dermatologista",
+                            },
+                            {
+                                value: "CIRURGIAO_PLASTICO",
+                                label: "Cirurgião Plástico",
+                            },
+                        ]}
+                        {...form.getInputProps("especialidade")}
+                    />
 
-                        <NumberInput
-                            label="Tempo médio de consulta"
-                            placeholder="Digite o tempo em minutos"
-                            min={1}
-                        />
+                    <NumberInput
+                        label="Tempo médio de consulta"
+                        placeholder="Digite o tempo em minutos"
+                        min={1}
+                        {...form.getInputProps("tempoMedioConsulta")}
+                    />
 
-                        <Button type="submit">
-                            {profissionalEditando
-                                ? "Salvar alterações"
-                                : "Cadastrar"}
-                        </Button>
-                    </Stack>
-                </form>
+                    <Button
+                        onClick={cadastrar}
+                        loading={cadastrarProfissional.isPending}
+                    >
+                        Cadastrar
+                    </Button>
+                </Stack>
             </Modal>
 
-            {isLoading && (
-                <Text>Carregando profissionais...</Text>
-            )}
+            {isLoading && <Text>Carregando profissionais...</Text>}
 
             {isError && (
                 <Text c="red">
@@ -233,9 +394,7 @@ function Profissional() {
                             <Table.Th>Telefone</Table.Th>
                             <Table.Th>CRM</Table.Th>
                             <Table.Th>Especialidade</Table.Th>
-                            <Table.Th>
-                                Tempo médio de consulta
-                            </Table.Th>
+                            <Table.Th>Tempo médio</Table.Th>
                             <Table.Th>Ações</Table.Th>
                         </Table.Tr>
                     </Table.Thead>
@@ -244,7 +403,7 @@ function Profissional() {
                         {profissionais?.map((profissional) => (
                             <Table.Tr key={profissional.cpf}>
                                 <Table.Td>
-                                    {profissional.cpf}
+                                    {formatarCpf(profissional.cpf)}
                                 </Table.Td>
 
                                 <Table.Td>
@@ -264,7 +423,7 @@ function Profissional() {
                                 </Table.Td>
 
                                 <Table.Td>
-                                    {profissional.telefone}
+                                    {formatarTelefone(profissional.telefone)}
                                 </Table.Td>
 
                                 <Table.Td>
@@ -284,11 +443,7 @@ function Profissional() {
                                         <Button
                                             size="xs"
                                             variant="light"
-                                            onClick={() =>
-                                                setProfissionalEditando(
-                                                    profissional
-                                                )
-                                            }
+                                            disabled
                                         >
                                             Editar
                                         </Button>
@@ -297,6 +452,7 @@ function Profissional() {
                                             size="xs"
                                             variant="light"
                                             color="red"
+                                            disabled
                                         >
                                             Excluir
                                         </Button>
