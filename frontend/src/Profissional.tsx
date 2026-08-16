@@ -389,10 +389,18 @@ function Profissional() {
         });
     };
 
+    const profissionaisOrdenados = [...(profissionais ?? [])].sort(
+        (a, b) =>
+            a.nomeCompleto.localeCompare(
+                b.nomeCompleto,
+                "pt-BR",
+                { sensitivity: "base" },
+            ),
+    );
+
     const salvando =
         cadastrarProfissional.isPending ||
         atualizarProfissional.isPending;
-
     return (
         <Stack>
             <Title order={1}>Profissionais</Title>
@@ -580,7 +588,7 @@ function Profissional() {
                     </Table.Thead>
 
                     <Table.Tbody>
-                        {profissionais?.map((profissional) => (
+                        {profissionaisOrdenados.map((profissional) => (
                             <Table.Tr key={profissional.cpf}>
                                 <Table.Td>
                                     {formatarCpf(profissional.cpf)}
