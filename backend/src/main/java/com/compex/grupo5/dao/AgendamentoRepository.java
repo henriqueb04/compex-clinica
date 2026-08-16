@@ -22,4 +22,29 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             ORDER BY lower(a.intervaloAtendimento) ASC
             """)
     List<Agendamento> findProximosAgendamentos(@Param("agora") ZonedDateTime agora);
+
+    /*
+     * Retorna todos os agendamentos de um cliente específico,
+     */
+    @Query("""
+            SELECT a FROM Agendamento a
+            JOIN FETCH a.cliente
+            JOIN FETCH a.profissional
+            WHERE a.cliente.cpf = :cpf
+            ORDER BY lower(a.intervaloAtendimento) ASC
+            """)
+    List<Agendamento> findByClienteCpf(@Param("cpf") String cpf);
+
+    /*
+     * Retorna todos os agendamentos de um profissional específico,
+     */
+    @Query("""
+            SELECT a FROM Agendamento a
+            JOIN FETCH a.cliente
+            JOIN FETCH a.profissional
+            WHERE a.profissional.cpf = :cpf
+            ORDER BY lower(a.intervaloAtendimento) ASC
+            """)
+    List<Agendamento> findByProfissionalCpf(@Param("cpf") String cpf);
 }
+

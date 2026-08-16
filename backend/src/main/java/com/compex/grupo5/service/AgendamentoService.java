@@ -22,5 +22,20 @@ public class AgendamentoService {
     public List<Agendamento> listarProximos() {
         return agendamentoRepository.findProximosAgendamentos(ZonedDateTime.now());
     }
+    /*
+     * Retorna todos os agendamentos de um cliente pelo CPF,
+     */
+    @Transactional(readOnly = true)
+    public List<Agendamento> listarPorCliente(String cpf) {
+        return agendamentoRepository.findByClienteCpf(cpf);
+    }
+
+    /*
+     * Retorna todos os agendamentos de um profissional pelo CPF,
+     */
+    @Transactional(readOnly = true)
+    public List<Agendamento> listarPorProfissional(String cpf) {
+        return agendamentoRepository.findByProfissionalCpf(cpf);
+    }
 }
 
