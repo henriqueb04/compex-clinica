@@ -5,6 +5,7 @@ import com.compex.grupo5.service.AgendamentoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,6 +24,31 @@ public class AgendamentoController {
     @GetMapping
     public ResponseEntity<List<AgendamentoDto>> listarProximos() {
         List<AgendamentoDto> lista = agendamentoService.listarProximos()
+                .stream()
+                .map(AgendamentoDto::fromEntity)
+                .toList();
+        return ResponseEntity.ok(lista);
+    }
+    /*
+     * Retorna todos os agendamentos de um cliente pelo CPF.
+     */
+    @GetMapping("/cliente/{cpf}")
+    public ResponseEntity<List<AgendamentoDto>> listarPorCliente(
+            @PathVariable String cpf) {
+        List<AgendamentoDto> lista = agendamentoService.listarPorCliente(cpf)
+                .stream()
+                .map(AgendamentoDto::fromEntity)
+                .toList();
+        return ResponseEntity.ok(lista);
+    }
+
+    /*
+     * Retorna todos os agendamentos de um profissional pelo CPF.
+     */
+    @GetMapping("/profissional/{cpf}")
+    public ResponseEntity<List<AgendamentoDto>> listarPorProfissional(
+            @PathVariable String cpf) {
+        List<AgendamentoDto> lista = agendamentoService.listarPorProfissional(cpf)
                 .stream()
                 .map(AgendamentoDto::fromEntity)
                 .toList();
