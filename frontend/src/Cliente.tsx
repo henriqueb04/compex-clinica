@@ -27,6 +27,104 @@ interface Cliente {
     telefone: string;
 }
 
+/*
+ * Formata o CPF para exibição.
+ */
+const formatarCpf = (cpf: string) => {
+    const numeros = cpf.replace(/\D/g, "").slice(0, 11);
+
+    if (numeros.length <= 3) {
+        return numeros;
+    }
+
+    if (numeros.length <= 6) {
+        return `${numeros.slice(0, 3)}.${numeros.slice(3)}`;
+    }
+
+    if (numeros.length <= 9) {
+        return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(6)}`;
+    }
+
+    return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(
+        6,
+        9,
+    )}-${numeros.slice(9)}`;
+};
+
+/*
+ * Formata o telefone para exibição.
+ */
+const formatarTelefone = (telefone: string) => {
+    const numeros = telefone.replace(/\D/g, "").slice(0, 11);
+
+    if (numeros.length === 0) {
+        return "";
+    }
+
+    if (numeros.length <= 2) {
+        return `(${numeros}`;
+    }
+
+    if (numeros.length <= 3) {
+        return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
+    }
+
+    if (numeros.length <= 7) {
+        return `(${numeros.slice(0, 2)}) ${numeros.slice(
+            2,
+            3,
+        )} ${numeros.slice(3)}`;
+    }
+
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(
+        2,
+        3,
+    )} ${numeros.slice(3, 7)}-${numeros.slice(7)}`;
+};
+
+/*
+ * Valida se a data de nascimento realmente existe e se não está no futuro.
+ */
+const validarDataNascimento = (data: string) => {
+    if (!data) {
+        return "Data de nascimento é obrigatória";
+    }
+
+    const partes = data.split("-");
+
+    if (partes.length !== 3) {
+        return "Data de nascimento inválida";
+    }
+
+    const ano = Number(partes[0]);
+    const mes = Number(partes[1]);
+    const dia = Number(partes[2]);
+
+    const dataObj = new Date(ano, mes - 1, dia);
+
+    /*
+     * Verifica se a data realmente existe.
+     */
+    if (
+        dataObj.getFullYear() !== ano ||
+        dataObj.getMonth() !== mes - 1 ||
+        dataObj.getDate() !== dia
+    ) {
+        return "Data de nascimento inválida";
+    }
+
+    const hoje = new Date();
+
+    hoje.setHours(0, 0, 0, 0);
+    dataObj.setHours(0, 0, 0, 0);
+
+    if (dataObj > hoje) {
+        return "Data de nascimento não pode ser futura";
+    }
+
+    return null;
+};
+
 function Cliente() {
     const [modalAberto, { open: abrirModal, close: fecharModal }] =
         useDisclosure(false);
@@ -57,8 +155,7 @@ function Cliente() {
                     ? null
                     : "Nome deve possuir pelo menos 3 caracteres",
 
-            dataNascimento: (value) =>
-                value ? null : "Data de nascimento é obrigatória",
+            dataNascimento: validarDataNascimento,
 
             sexo: (value) =>
                 value ? null : "Sexo é obrigatório",
@@ -69,12 +166,15 @@ function Cliente() {
                     : "Endereço é obrigatório",
 
             telefone: (value) =>
-                value.trim().length > 0
+                value.replace(/\D/g, "").length === 11
                     ? null
-                    : "Telefone é obrigatório",
+                    : "Telefone deve possuir 11 dígitos",
         },
     });
 
+    /*
+     * Busca todos os clientes.
+     */
     const {
         data: clientes,
         isLoading,
@@ -88,6 +188,9 @@ function Cliente() {
         },
     });
 
+    /*
+     * Cadastra um novo cliente.
+     */
     const cadastrarCliente = async (valores: typeof form.values) => {
         try {
             await api.post("/clientes", {
@@ -125,6 +228,9 @@ function Cliente() {
         }
     };
 
+    /*
+     * Abre o formulário para edição.
+     */
     const abrirEdicao = (cliente: Cliente) => {
         setClienteEditando(cliente);
 
@@ -140,6 +246,9 @@ function Cliente() {
         abrirModal();
     };
 
+    /*
+     * Atualiza um cliente existente.
+     */
     const atualizarCliente = async (valores: typeof form.values) => {
         if (!clienteEditando) {
             return;
@@ -182,6 +291,9 @@ function Cliente() {
         }
     };
 
+    /*
+     * Exclui um cliente.
+     */
     const excluirCliente = async (cpf: string) => {
         try {
             await api.delete(`/clientes/${cpf}`);
@@ -209,6 +321,9 @@ function Cliente() {
         }
     };
 
+    /*
+     * Abre confirmação antes de excluir.
+     */
     const confirmarExclusao = (cliente: Cliente) => {
         modals.openConfirmModal({
             title: "Excluir cliente",
@@ -230,6 +345,9 @@ function Cliente() {
         });
     };
 
+    /*
+     * Fecha o formulário e limpa os dados.
+     */
     const fecharFormulario = () => {
         form.reset();
         setClienteEditando(null);
@@ -266,15 +384,24 @@ function Cliente() {
                     onSubmit={form.onSubmit(
                         clienteEditando
                             ? atualizarCliente
-                            : cadastrarCliente
+                            : cadastrarCliente,
                     )}
                 >
                     <Stack>
                         <TextInput
                             label="CPF"
-                            placeholder="Digite os 11 dígitos do CPF"
+                            placeholder="123.456.789-01"
+                            maxLength={14}
                             disabled={clienteEditando !== null}
-                            {...form.getInputProps("cpf")}
+                            value={formatarCpf(form.values.cpf)}
+                            onChange={(event) => {
+                                const cpf = event.currentTarget.value
+                                    .replace(/\D/g, "")
+                                    .slice(0, 11);
+
+                                form.setFieldValue("cpf", cpf);
+                            }}
+                            error={form.errors.cpf}
                         />
 
                         <TextInput
@@ -317,8 +444,17 @@ function Cliente() {
 
                         <TextInput
                             label="Telefone"
-                            placeholder="Digite o telefone"
-                            {...form.getInputProps("telefone")}
+                            placeholder="(81) 9 9999-9999"
+                            maxLength={16}
+                            value={formatarTelefone(form.values.telefone)}
+                            onChange={(event) => {
+                                const telefone = event.currentTarget.value
+                                    .replace(/\D/g, "")
+                                    .slice(0, 11);
+
+                                form.setFieldValue("telefone", telefone);
+                            }}
+                            error={form.errors.telefone}
                         />
 
                         <Button type="submit">
@@ -330,7 +466,9 @@ function Cliente() {
                 </form>
             </Modal>
 
-            {isLoading && <Text>Carregando clientes...</Text>}
+            {isLoading && (
+                <Text>Carregando clientes...</Text>
+            )}
 
             {isError && (
                 <Text c="red">
@@ -355,18 +493,38 @@ function Cliente() {
                     <Table.Tbody>
                         {clientes?.map((cliente) => (
                             <Table.Tr key={cliente.cpf}>
-                                <Table.Td>{cliente.cpf}</Table.Td>
-                                <Table.Td>{cliente.nomeCompleto}</Table.Td>
-                                <Table.Td>{cliente.dataNascimento}</Table.Td>
-                                <Table.Td>{cliente.sexo}</Table.Td>
-                                <Table.Td>{cliente.endereco}</Table.Td>
-                                <Table.Td>{cliente.telefone}</Table.Td>
+                                <Table.Td>
+                                    {formatarCpf(cliente.cpf)}
+                                </Table.Td>
+
+                                <Table.Td>
+                                    {cliente.nomeCompleto}
+                                </Table.Td>
+
+                                <Table.Td>
+                                    {cliente.dataNascimento}
+                                </Table.Td>
+
+                                <Table.Td>
+                                    {cliente.sexo}
+                                </Table.Td>
+
+                                <Table.Td>
+                                    {cliente.endereco}
+                                </Table.Td>
+
+                                <Table.Td>
+                                    {formatarTelefone(cliente.telefone)}
+                                </Table.Td>
+
                                 <Table.Td>
                                     <Stack gap={4}>
                                         <Button
                                             size="xs"
                                             variant="light"
-                                            onClick={() => abrirEdicao(cliente)}
+                                            onClick={() =>
+                                                abrirEdicao(cliente)
+                                            }
                                         >
                                             Editar
                                         </Button>
@@ -375,7 +533,9 @@ function Cliente() {
                                             size="xs"
                                             variant="light"
                                             color="red"
-                                            onClick={() => confirmarExclusao(cliente)}
+                                            onClick={() =>
+                                                confirmarExclusao(cliente)
+                                            }
                                         >
                                             Excluir
                                         </Button>
