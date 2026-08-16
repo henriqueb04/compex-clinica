@@ -102,6 +102,11 @@ public class ClienteService {
             );
         }
 
+        if (cliente.getNomeCompleto().trim().length() < 3) {
+            throw new IllegalArgumentException(
+                    "Nome deve possuir pelo menos 3 caracteres."
+            );
+        }
         if (cliente.getDataNascimento() == null) {
             throw new IllegalArgumentException(
                     "Data de nascimento é obrigatória."
@@ -131,6 +136,14 @@ public class ClienteService {
                 cliente.getTelefone().isBlank()) {
             throw new IllegalArgumentException(
                     "Telefone é obrigatório."
+            );
+        }
+
+        String telefone = cliente.getTelefone().replaceAll("\\D", "");
+
+        if (telefone.length() != 11) {
+            throw new IllegalArgumentException(
+                    "Telefone deve possuir 11 dígitos."
             );
         }
     }
