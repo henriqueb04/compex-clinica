@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -24,6 +25,10 @@ public record ProfissionalDto(
         String cpf,
 
         @NotBlank(message = "Nome completo é obrigatório")
+        @Size(
+                min = 3,
+                message = "Nome deve possuir pelo menos 3 caracteres"
+        )
         String nomeCompleto,
 
         @NotNull(message = "Data de nascimento é obrigatória")
@@ -36,6 +41,10 @@ public record ProfissionalDto(
         String endereco,
 
         @NotBlank(message = "Telefone é obrigatório")
+        @Pattern(
+                regexp = "^\\d{11}$",
+                message = "Telefone deve possuir 11 dígitos"
+        )
         String telefone,
 
         @NotBlank(message = "CRM é obrigatório")

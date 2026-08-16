@@ -134,8 +134,8 @@ function Profissional() {
                     : null,
 
             nomeCompleto: (valor) =>
-                valor.trim().length === 0
-                    ? "Nome completo é obrigatório"
+                valor.trim().length < 3
+                    ? "Nome deve possuir pelo menos 3 caracteres"
                     : null,
 
             dataNascimento: validarDataNascimento,
@@ -149,9 +149,9 @@ function Profissional() {
                     : null,
 
             telefone: (valor) =>
-                valor.replace(/\D/g, "").length < 10
-                    ? "Telefone inválido"
-                    : null,
+                valor.replace(/\D/g, "").length === 11
+                    ? null
+                    : "Telefone deve possuir 11 dígitos",
 
             crm: (valor) =>
                 valor.trim().length === 0
