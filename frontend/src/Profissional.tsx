@@ -10,6 +10,7 @@ import {
     TextInput,
     Title,
 } from "@mantine/core";
+import { modals } from "@mantine/modals";
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
@@ -287,6 +288,40 @@ function Profissional() {
         },
     });
 
+    /*
+ * Exclui um profissional existente.
+ */
+    const excluirProfissional = useMutation({
+        mutationFn: async (cpf: string) => {
+            return api.delete(`/profissionais/${cpf}`);
+        },
+
+        onSuccess: () => {
+            notifications.show({
+                title: "Sucesso",
+                message: "Profissional excluído com sucesso!",
+                color: "green",
+            });
+
+            queryClient.invalidateQueries({
+                queryKey: ["profissionais"],
+            });
+        },
+
+        onError: (error: any) => {
+            const mensagem =
+                error?.response?.data?.message ||
+                error?.response?.data?.erro ||
+                "Não foi possível excluir o profissional.";
+
+            notifications.show({
+                title: "Erro",
+                message: mensagem,
+                color: "red",
+            });
+        },
+    });
+
     const cadastrar = () => {
         const resultado = form.validate();
 
@@ -328,6 +363,30 @@ function Profissional() {
         form.reset();
         setProfissionalEditando(null);
         fecharModal();
+    };
+
+    /*
+ * Abre confirmação antes de excluir.
+ */
+    const confirmarExclusao = (profissional: Profissional) => {
+        modals.openConfirmModal({
+            title: "Excluir profissional",
+            centered: true,
+            children: (
+                <Text>
+                    Tem certeza que deseja excluir o profissional{" "}
+                    <strong>{profissional.nomeCompleto}</strong>?
+                </Text>
+            ),
+            labels: {
+                confirm: "Excluir",
+                cancel: "Cancelar",
+            },
+            confirmProps: {
+                color: "red",
+            },
+            onConfirm: () => excluirProfissional.mutate(profissional.cpf),
+        });
     };
 
     const salvando =
@@ -575,7 +634,7 @@ function Profissional() {
                                             size="xs"
                                             variant="light"
                                             color="red"
-                                            disabled
+                                            onClick={() => confirmarExclusao(profissional)}
                                         >
                                             Excluir
                                         </Button>
