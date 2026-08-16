@@ -85,14 +85,6 @@ public class AgendamentoController {
         );
     }
 
-//    @GetMapping("/deletar/{id}")
-//    public ResponseEntity<AgendamentoDto> deletarAgendamento(@PathVariable int id) {
-//        return new ResponseEntity<>(
-//                AgendamentoDto.fromEntity(agendamentoService.salvarAgendamento(agendamentoDto)),
-//                HttpStatus.CREATED
-//        );
-//    }
-
     public record Listar(
             @NotNull @Pattern(regexp = "^\\d{11}$", message = "Formato de CPF inválido")
             String cpfProfissional,

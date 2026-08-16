@@ -21,9 +21,9 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             SELECT a FROM Agendamento a
             JOIN FETCH a.cliente
             JOIN FETCH a.profissional
-            WHERE a.statusAgendamento = com.compex.grupo5.misc.StatusAgendamento.AGENDADO
-              AND lower(a.intervaloAtendimento) >= :agora
-            ORDER BY lower(a.intervaloAtendimento) ASC
+            WHERE a.statusAgendamento = StatusAgendamento.AGENDADO
+              AND FUNCTION("lower", a.intervaloAtendimento) >= :agora
+            ORDER BY FUNCTION("lower", a.intervaloAtendimento) ASC
             """)
     List<Agendamento> findProximosAgendamentos(@Param("agora") ZonedDateTime agora);
 
@@ -35,7 +35,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             JOIN FETCH a.cliente
             JOIN FETCH a.profissional
             WHERE a.cliente.cpf = :cpf
-            ORDER BY lower(a.intervaloAtendimento) ASC
+            ORDER BY FUNCTION("lower", a.intervaloAtendimento) ASC
             """)
     List<Agendamento> findByClienteCpf(@Param("cpf") String cpf);
 
@@ -47,7 +47,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             JOIN FETCH a.cliente
             JOIN FETCH a.profissional
             WHERE a.profissional.cpf = :cpf
-            ORDER BY lower(a.intervaloAtendimento) ASC
+            ORDER BY FUNCTION("lower", a.intervaloAtendimento) ASC
             """)
     List<Agendamento> findByProfissionalCpf(@Param("cpf") String cpf);
     /*
@@ -63,16 +63,31 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             """)
     Optional<Agendamento> findByIdComRelacoes(@Param("id") Long id);
 
+    /*
+     * Busca todos os agendamentos sem o status CANCELADO em um intervalo.
+     * nativeQuery porque usa o operador && nativo do PostgreSQL.
+     */
     @Query(value = """
         SELECT * FROM agendamento a
         WHERE a.profissional_cpf = (:profissional_cpf) and
-        a.intervalo_atendimento && tstzrange(:comeco, :fim, '()')
+        a.intervalo_atendimento && tstzrange(:comeco, :fim, '()') and
+        a.status_agendamento != 'CANCELADO'
     """, nativeQuery = true)
     List<Agendamento> agendamentosEmIntervalo(
             @Param("profissional_cpf") String profissionalCpf,
             @Param("comeco") ZonedDateTime comeco,
             @Param("fim") ZonedDateTime fim
     );
-    List<Agendamento> findAllByNumeroSemana(Integer numeroSemana);
+
+    /*
+     * Busca todos os agendamentos não cancelados em um ano e semana específicos.
+     */
+    @Query("""
+        SELECT a FROM Agendamento a
+        WHERE a.ano = ?1 and
+        a.numeroSemana = ?2 and
+        a.statusAgendamento != StatusAgendamento.CANCELADO
+    """)
+    List<Agendamento> agendadosByAnoESemana(Integer ano, Integer numeroSemana);
 }
 
