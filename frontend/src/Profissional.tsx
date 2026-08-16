@@ -13,7 +13,11 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
 import api from "./api";
 
 type Sexo = "MASCULINO" | "FEMININO" | "OUTRO";
@@ -43,9 +47,11 @@ const formatarCpf = (valor: string) => {
     const numeros = valor.replace(/\D/g, "").slice(0, 11);
 
     if (numeros.length <= 3) return numeros;
+
     if (numeros.length <= 6) {
         return `${numeros.slice(0, 3)}.${numeros.slice(3)}`;
     }
+
     if (numeros.length <= 9) {
         return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(6)}`;
     }
@@ -60,9 +66,11 @@ const formatarTelefone = (valor: string) => {
     const numeros = valor.replace(/\D/g, "").slice(0, 11);
 
     if (numeros.length <= 2) return numeros;
+
     if (numeros.length <= 3) {
         return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
     }
+
     if (numeros.length <= 7) {
         return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 3)} ${numeros.slice(
             3,
@@ -76,7 +84,9 @@ const formatarTelefone = (valor: string) => {
 };
 
 const validarDataNascimento = (valor: string) => {
-    if (!valor) return "Data de nascimento é obrigatória";
+    if (!valor) {
+        return "Data de nascimento é obrigatória";
+    }
 
     const data = new Date(`${valor}T00:00:00`);
 
@@ -97,6 +107,9 @@ const validarDataNascimento = (valor: string) => {
 function Profissional() {
     const [modalAberto, { open: abrirModal, close: fecharModal }] =
         useDisclosure(false);
+
+    const [profissionalEditando, setProfissionalEditando] =
+        useState<Profissional | null>(null);
 
     const queryClient = useQueryClient();
 
@@ -167,6 +180,9 @@ function Profissional() {
         },
     });
 
+    /*
+     * Cadastra um novo profissional.
+     */
     const cadastrarProfissional = useMutation({
         mutationFn: async () => {
             const valores = form.values;
@@ -194,6 +210,7 @@ function Profissional() {
             });
 
             form.reset();
+            setProfissionalEditando(null);
             fecharModal();
 
             queryClient.invalidateQueries({
@@ -215,6 +232,61 @@ function Profissional() {
         },
     });
 
+    /*
+     * Atualiza um profissional existente.
+     */
+    const atualizarProfissional = useMutation({
+        mutationFn: async () => {
+            const valores = form.values;
+
+            const profissional = {
+                cpf: valores.cpf.replace(/\D/g, ""),
+                nomeCompleto: valores.nomeCompleto,
+                dataNascimento: valores.dataNascimento,
+                sexo: valores.sexo,
+                endereco: valores.endereco,
+                telefone: valores.telefone.replace(/\D/g, ""),
+                crm: valores.crm,
+                especialidade: valores.especialidade,
+                tempoMedioConsulta: valores.tempoMedioConsulta,
+            };
+
+            return api.put(
+                `/profissionais/${profissional.cpf}`,
+                profissional,
+            );
+        },
+
+        onSuccess: () => {
+            notifications.show({
+                title: "Sucesso",
+                message: "Profissional atualizado com sucesso!",
+                color: "green",
+            });
+
+            form.reset();
+            setProfissionalEditando(null);
+            fecharModal();
+
+            queryClient.invalidateQueries({
+                queryKey: ["profissionais"],
+            });
+        },
+
+        onError: (error: any) => {
+            const mensagem =
+                error?.response?.data?.message ||
+                error?.response?.data?.erro ||
+                "Não foi possível atualizar o profissional.";
+
+            notifications.show({
+                title: "Erro",
+                message: mensagem,
+                color: "red",
+            });
+        },
+    });
+
     const cadastrar = () => {
         const resultado = form.validate();
 
@@ -223,10 +295,44 @@ function Profissional() {
         }
     };
 
+    const atualizar = () => {
+        const resultado = form.validate();
+
+        if (!resultado.hasErrors) {
+            atualizarProfissional.mutate();
+        }
+    };
+
+    /*
+     * Abre o formulário para edição.
+     */
+    const editarProfissional = (profissional: Profissional) => {
+        setProfissionalEditando(profissional);
+
+        form.setValues({
+            cpf: profissional.cpf,
+            nomeCompleto: profissional.nomeCompleto,
+            dataNascimento: profissional.dataNascimento,
+            sexo: profissional.sexo,
+            endereco: profissional.endereco,
+            telefone: profissional.telefone,
+            crm: profissional.crm,
+            especialidade: profissional.especialidade,
+            tempoMedioConsulta: profissional.tempoMedioConsulta,
+        });
+
+        abrirModal();
+    };
+
     const fecharFormulario = () => {
         form.reset();
+        setProfissionalEditando(null);
         fecharModal();
     };
+
+    const salvando =
+        cadastrarProfissional.isPending ||
+        atualizarProfissional.isPending;
 
     return (
         <Stack>
@@ -237,6 +343,7 @@ function Profissional() {
             <Button
                 onClick={() => {
                     form.reset();
+                    setProfissionalEditando(null);
                     abrirModal();
                 }}
             >
@@ -246,7 +353,11 @@ function Profissional() {
             <Modal
                 opened={modalAberto}
                 onClose={fecharFormulario}
-                title="Novo profissional"
+                title={
+                    profissionalEditando
+                        ? "Editar profissional"
+                        : "Novo profissional"
+                }
                 centered
             >
                 <Stack>
@@ -261,6 +372,7 @@ function Profissional() {
                             );
                         }}
                         error={form.errors.cpf}
+                        disabled={profissionalEditando !== null}
                         maxLength={14}
                     />
 
@@ -320,6 +432,7 @@ function Profissional() {
                         label="CRM"
                         placeholder="Digite o CRM"
                         {...form.getInputProps("crm")}
+                        disabled={profissionalEditando !== null}
                     />
 
                     <Select
@@ -366,15 +479,23 @@ function Profissional() {
                     />
 
                     <Button
-                        onClick={cadastrar}
-                        loading={cadastrarProfissional.isPending}
+                        onClick={
+                            profissionalEditando
+                                ? atualizar
+                                : cadastrar
+                        }
+                        loading={salvando}
                     >
-                        Cadastrar
+                        {profissionalEditando
+                            ? "Salvar alterações"
+                            : "Cadastrar"}
                     </Button>
                 </Stack>
             </Modal>
 
-            {isLoading && <Text>Carregando profissionais...</Text>}
+            {isLoading && (
+                <Text>Carregando profissionais...</Text>
+            )}
 
             {isError && (
                 <Text c="red">
@@ -443,7 +564,9 @@ function Profissional() {
                                         <Button
                                             size="xs"
                                             variant="light"
-                                            disabled
+                                            onClick={() =>
+                                                editarProfissional(profissional)
+                                            }
                                         >
                                             Editar
                                         </Button>
