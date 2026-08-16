@@ -5,6 +5,7 @@ import com.compex.grupo5.model.Agendamento;
 import com.compex.grupo5.model.Cliente;
 import com.compex.grupo5.model.Profissional;
 import io.hypersistence.utils.hibernate.type.range.Range;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
@@ -17,15 +18,18 @@ import java.util.Locale;
  * DTO for {@link com.compex.grupo5.model.Agendamento}
  */
 public record AgendamentoDto(
+
         Long id,
         @NotNull @Pattern(regexp = "^\\d{11}$", message = "Formato de CPF inválido")
-        String cliente_cpf,
-        String cliente_nome,
+        String clienteCpf,
+        @NotNull @NotBlank String clienteNome,
         @NotNull @Pattern(regexp = "^\\d{11}$", message = "Formato de CPF inválido")
-        String profissional_cpf,
+        String profissionalCpf,
+        @NotNull @NotBlank String profissionalNome,
         @NotNull ZonedDateTime comeco,
         @NotNull ZonedDateTime fim,
         @NotNull StatusAgendamento statusAgendamento
+
 ) implements Serializable {
     public Agendamento toEntity(Profissional profissional, Cliente cliente) {
         return new Agendamento(
@@ -38,15 +42,16 @@ public record AgendamentoDto(
                 this.statusAgendamento
         );
     }
-    public static AgendamentoDto fromEntity(Agendamento agendamento) {
+    public static AgendamentoDto fromEntity(Agendamento a) {
         return new AgendamentoDto(
-                agendamento.getId(),
-                agendamento.getCliente().getCpf(),
-                agendamento.getCliente().getNomeCompleto(),
-                agendamento.getProfissional().getCpf(),
-                agendamento.getIntervaloAtendimento().lower(),
-                agendamento.getIntervaloAtendimento().upper(),
-                agendamento.getStatusAgendamento()
+                a.getId(),
+                a.getCliente().getCpf(),
+                a.getCliente().getNomeCompleto(),
+                a.getProfissional().getCpf(),
+                a.getProfissional().getNomeCompleto(),
+                a.getIntervaloAtendimento().lower(),
+                a.getIntervaloAtendimento().upper(),
+                a.getStatusAgendamento()
         );
     }
 }
