@@ -13,6 +13,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
+import { modals } from "@mantine/modals";
 import api from "./api";
 
 type Sexo = "MASCULINO" | "FEMININO" | "OUTRO";
@@ -181,6 +182,54 @@ function Cliente() {
         }
     };
 
+    const excluirCliente = async (cpf: string) => {
+        try {
+            await api.delete(`/clientes/${cpf}`);
+
+            notifications.show({
+                title: "Cliente excluído",
+                message: "O cliente foi excluído com sucesso.",
+                color: "green",
+            });
+
+            await queryClient.invalidateQueries({
+                queryKey: ["clientes"],
+            });
+        } catch (error: any) {
+            const mensagem =
+                error.response?.data?.message ||
+                error.response?.data ||
+                "Não foi possível excluir o cliente.";
+
+            notifications.show({
+                title: "Erro ao excluir cliente",
+                message: mensagem,
+                color: "red",
+            });
+        }
+    };
+
+    const confirmarExclusao = (cliente: Cliente) => {
+        modals.openConfirmModal({
+            title: "Excluir cliente",
+            centered: true,
+            children: (
+                <Text>
+                    Tem certeza que deseja excluir o cliente{" "}
+                    <strong>{cliente.nomeCompleto}</strong>?
+                </Text>
+            ),
+            labels: {
+                confirm: "Excluir",
+                cancel: "Cancelar",
+            },
+            confirmProps: {
+                color: "red",
+            },
+            onConfirm: () => excluirCliente(cliente.cpf),
+        });
+    };
+
     const fecharFormulario = () => {
         form.reset();
         setClienteEditando(null);
@@ -313,13 +362,24 @@ function Cliente() {
                                 <Table.Td>{cliente.endereco}</Table.Td>
                                 <Table.Td>{cliente.telefone}</Table.Td>
                                 <Table.Td>
-                                    <Button
-                                        size="xs"
-                                        variant="light"
-                                        onClick={() => abrirEdicao(cliente)}
-                                    >
-                                        Editar
-                                    </Button>
+                                    <Stack gap={4}>
+                                        <Button
+                                            size="xs"
+                                            variant="light"
+                                            onClick={() => abrirEdicao(cliente)}
+                                        >
+                                            Editar
+                                        </Button>
+
+                                        <Button
+                                            size="xs"
+                                            variant="light"
+                                            color="red"
+                                            onClick={() => confirmarExclusao(cliente)}
+                                        >
+                                            Excluir
+                                        </Button>
+                                    </Stack>
                                 </Table.Td>
                             </Table.Tr>
                         ))}
