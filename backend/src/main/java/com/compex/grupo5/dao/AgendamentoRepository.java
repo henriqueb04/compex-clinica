@@ -4,6 +4,7 @@ import com.compex.grupo5.model.Agendamento;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.util.Optional;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -46,5 +47,17 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             ORDER BY lower(a.intervaloAtendimento) ASC
             """)
     List<Agendamento> findByProfissionalCpf(@Param("cpf") String cpf);
+    /*
+     * Busca um agendamento por ID já com cliente e profissional carregados.
+     * Necessário para o cancelamento, pois as relações são LAZY e o
+     * findById padrão do JPA não faz o fetch delas.
+     */
+    @Query("""
+            SELECT a FROM Agendamento a
+            JOIN FETCH a.cliente
+            JOIN FETCH a.profissional
+            WHERE a.id = :id
+            """)
+    Optional<Agendamento> findByIdComRelacoes(@Param("id") Long id);
 }
 
