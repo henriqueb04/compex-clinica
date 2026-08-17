@@ -272,6 +272,7 @@ function Agendamentos() {
                         agen={agens[selectedEvent]}
                         profissional={profissional}
                         onSuccess={() => {
+                          clearWeekState()
                           refetchAgendamentos();
                           refetchHorarios();
                         }}

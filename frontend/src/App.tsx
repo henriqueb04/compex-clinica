@@ -51,11 +51,6 @@ function App() {
             leftSection={<HouseIcon size={16} />}
           />
           <NavLink
-            href="/listagem"
-            label="Listagem"
-            leftSection={<ListBulletsIcon size={16} />}
-          />
-          <NavLink
               href="/clientes"
               label="Clientes"
               leftSection={<UsersIcon size={16} />}
@@ -84,7 +79,6 @@ function App() {
             <Routes>
               <Route path="/">
                 <Route index element={<Home />} />
-                <Route path="/listagem" element={<Listagem />} />
                 <Route path="/horarios" element={<Horarios />} />
                 <Route path="/clientes" element={<Cliente />} />
                 <Route path="/profissionais" element={<Profissional />} />
