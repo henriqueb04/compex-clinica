@@ -2,7 +2,11 @@ package com.compex.grupo5.controller;
 
 import com.compex.grupo5.dto.AgendamentoDto;
 import com.compex.grupo5.service.AgendamentoService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,7 +16,6 @@ import java.util.List;
 @RequestMapping("/agendamentos")
 @RequiredArgsConstructor
 public class AgendamentoController {
-
     private final AgendamentoService agendamentoService;
 
     /*
@@ -63,5 +66,23 @@ public class AgendamentoController {
                 agendamentoService.cancelar(id)
         );
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/profissional/{cpf}/semana")
+    public ResponseEntity<List<AgendamentoDto>> getAgendamentosSemana(
+            @PathVariable @Pattern(regexp = "^\\d{11}$") String cpf,
+            @RequestParam @NotNull Integer ano,
+            @RequestParam @NotNull Integer numeroSemana) {
+        return ResponseEntity.ok(
+                agendamentoService.agendamentosProfissionalEmSemana(cpf, ano, numeroSemana)
+        );
+    }
+
+    @PostMapping("/marcar")
+    public ResponseEntity<AgendamentoDto> marcarAgendamento(@RequestBody @Valid AgendamentoDto agendamentoDto) {
+        return new ResponseEntity<>(
+                AgendamentoDto.fromEntity(agendamentoService.salvarAgendamento(agendamentoDto)),
+                HttpStatus.CREATED
+        );
     }
 }

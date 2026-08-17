@@ -46,13 +46,11 @@ interface Horario {
 }
 
 const fetchHorarios = async (data: Dayjs, cpf: string) => {
-  const request = {
-    ano: data.get("year"),
-    numeroSemana: data.week(),
-    cpf: cpf,
-  };
-  const horarios = (await api.post("/api/horario/profissional", request))
-    .data as Horario[];
+  const horarios = (
+    await api.get(
+      `/api/horario/profissional/${cpf}?numeroSemana=${data.isoWeek()}&ano=${data.isoWeekYear()}`,
+    )
+  ).data as Horario[];
   return horarios;
 };
 
@@ -86,8 +84,8 @@ function Horarios() {
   const [profissional, setProfissional] = useState<Profissional | null>(null)
 
   const dataStr = date.format("YYYY-MM-DD");
-  const numeroSemana = date.week();
-  const ano = date.year();
+  const numeroSemana = date.isoWeek();
+  const ano = date.isoWeekYear();
 
   const clearWeekState = () => {
     setSelectedEvent(null);
@@ -164,7 +162,7 @@ function Horarios() {
       const novaData = dayjs(date);
       if (
         mudou &&
-        (novaData.week() !== numeroSemana || novaData.year() !== ano)
+        (novaData.isoWeek() !== numeroSemana || novaData.isoWeekYear() !== ano)
       ) {
         modals.openConfirmModal({
           title: "Descartar mudanças?",
@@ -267,7 +265,8 @@ function Horarios() {
             date={dataStr}
             onDateChange={selectDate}
             events={eventos}
-            firstDayOfWeek={0}
+            slotHeight={80}
+            firstDayOfWeek={1}
             startTime="06:00"
             intervalMinutes={15}
             withAllDaySlots={false}
@@ -281,7 +280,7 @@ function Horarios() {
             mih={300}
             value={dataStr}
             onChange={selectDate}
-            firstDayOfWeek={0}
+            firstDayOfWeek={1}
             withWeekNumbers
             highlightToday
           />

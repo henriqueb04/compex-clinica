@@ -88,7 +88,7 @@ public class HorarioDisponivelService {
                                                existente.getIntervaloAtendimento().lower().isBefore(h.fim()) &&
                                                existente.getIntervaloAtendimento().upper().isAfter(h.comeco()));
                 if (conflito) {
-                    throw new TimeRangeConflictException(profissional_cpf, comeco, fim);
+                    throw new TimeRangeConflictException(profissional_cpf, h.comeco(), h.fim());
                 }
                 entidadesParaSalvar.add(h.toEntity(profissional));
             }

@@ -18,16 +18,27 @@ export interface Profissional {
 function ProfissionalPicker({
   value,
   onChange,
+  especialidade,
 }: {
   value: Profissional | null;
   onChange: (newValue: Profissional | null) => unknown;
+  especialidade?: string | null;
 }) {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["fetch_profissional"],
     queryFn: async () => {
-      return (await api.get("/profissionais")).data as Profissional[];
+      const profissionais = (await api.get("/profissionais"))
+        .data as Profissional[];
+      return profissionais;
     },
   });
+  const profissionaisFiltrados = especialidade
+    ? data?.filter(
+        (p) =>
+          p.especialidade.toLowerCase() ===
+          especialidade.toLocaleLowerCase().replaceAll(" ", "_"),
+      )
+    : data;
 
   useEffect(() => {
     if (isError) {
@@ -41,13 +52,15 @@ function ProfissionalPicker({
 
   const [search, setSearch] = useState<string>("");
 
-  const shouldFilter = data && data.every((p) => p.nomeCompleto !== search);
+  const shouldFilter =
+    profissionaisFiltrados &&
+    profissionaisFiltrados.every((p) => p.nomeCompleto !== search);
   const filteredOptions =
     (shouldFilter
-      ? data?.filter((p) =>
+      ? profissionaisFiltrados?.filter((p) =>
           p.nomeCompleto.toLowerCase().includes(search.toLowerCase().trim()),
         )
-      : data) ?? [];
+      : profissionaisFiltrados) ?? [];
 
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
@@ -65,8 +78,8 @@ function ProfissionalPicker({
     <Combobox
       store={combobox}
       onOptionSubmit={(cpf) => {
-        if (data) {
-          const p = data.find((p) => p.cpf == cpf);
+        if (profissionaisFiltrados) {
+          const p = profissionaisFiltrados.find((p) => p.cpf == cpf);
           onChange(p ?? null);
           setSearch(p?.nomeCompleto ?? "");
         }

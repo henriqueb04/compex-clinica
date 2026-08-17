@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface HorarioDisponivelRepository extends JpaRepository<HorarioDisponivel, Long> {
@@ -26,4 +27,13 @@ public interface HorarioDisponivelRepository extends JpaRepository<HorarioDispon
             @Param("fim") ZonedDateTime fim,
             @Param("ignoredIds") List<Long> ignoredIds
             );
+
+    @Query(value = """
+            SELECT * FROM horarios_disponiveis h
+            WHERE h.intervalo_atendimento @> tstzrange(:comeco, :fim, '[)')
+""", nativeQuery = true)
+    Optional<HorarioDisponivel> findContains(
+            @Param("comeco") ZonedDateTime comeco,
+            @Param("fim") ZonedDateTime fim
+    );
 }
