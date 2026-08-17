@@ -150,13 +150,22 @@ public class ProfissionalService {
 
         validarCpf(profissional.getCpf());
 
+        // Nome
         if (profissional.getNomeCompleto() == null ||
                 profissional.getNomeCompleto().isBlank()) {
+
             throw new IllegalArgumentException(
                     "Nome completo é obrigatório."
             );
         }
 
+        if (profissional.getNomeCompleto().trim().length() < 3) {
+            throw new IllegalArgumentException(
+                    "Nome deve possuir pelo menos 3 caracteres."
+            );
+        }
+
+        // Data de nascimento
         if (profissional.getDataNascimento() == null) {
             throw new IllegalArgumentException(
                     "Data de nascimento é obrigatória."
@@ -169,41 +178,60 @@ public class ProfissionalService {
             );
         }
 
+        // Sexo
         if (profissional.getSexo() == null) {
             throw new IllegalArgumentException(
                     "Sexo é obrigatório."
             );
         }
 
+        // Endereço
         if (profissional.getEndereco() == null ||
                 profissional.getEndereco().isBlank()) {
+
             throw new IllegalArgumentException(
                     "Endereço é obrigatório."
             );
         }
 
+        // Telefone
         if (profissional.getTelefone() == null ||
                 profissional.getTelefone().isBlank()) {
+
             throw new IllegalArgumentException(
                     "Telefone é obrigatório."
             );
         }
 
+        String telefone = profissional.getTelefone()
+                .replaceAll("\\D", "");
+
+        if (telefone.length() != 11) {
+            throw new IllegalArgumentException(
+                    "Telefone deve possuir 11 dígitos."
+            );
+        }
+
+        // CRM
         if (profissional.getCrm() == null ||
                 profissional.getCrm().isBlank()) {
+
             throw new IllegalArgumentException(
                     "CRM é obrigatório."
             );
         }
 
+        // Especialidade
         if (profissional.getEspecialidade() == null) {
             throw new IllegalArgumentException(
                     "Especialidade é obrigatória."
             );
         }
 
+        // Tempo médio de consulta
         if (profissional.getTempoMedioConsulta() == null ||
                 profissional.getTempoMedioConsulta() <= 0) {
+
             throw new IllegalArgumentException(
                     "Tempo médio de consulta deve ser maior que zero."
             );

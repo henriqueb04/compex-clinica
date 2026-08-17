@@ -20,6 +20,7 @@ import "./App.css";
 import Listagem from "./Listagem";
 import Horarios from "./Horarios";
 import Cliente from "./Cliente";
+import Profissional from "./Profissional";
 
 function NavLink({
   href,
@@ -58,10 +59,17 @@ function App() {
               label="Clientes"
               leftSection={<UsersIcon size={16} />}
           />
+
           <NavLink
-            href="/horarios"
-            label="Definir horários de atendimento"
-            leftSection={<ClockIcon size={16} />}
+              href="/profissionais"
+              label="Profissionais"
+              leftSection={<UsersIcon size={16} />}
+          />
+
+          <NavLink
+              href="/horarios"
+              label="Definir horários de atendimento"
+              leftSection={<ClockIcon size={16} />}
           />
         </Drawer>
 
@@ -73,6 +81,7 @@ function App() {
                 <Route path="/listagem" element={<Listagem />} />
                 <Route path="/horarios" element={<Horarios />} />
                 <Route path="/clientes" element={<Cliente />} />
+                <Route path="/profissionais" element={<Profissional />} />
               </Route>
             </Routes>
           </Card>
