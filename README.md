@@ -72,14 +72,12 @@ O sistema é capaz de:
 **Gestão de clientes**
 - Cadastrar novos clientes, com validação dos dados informados;
 - Listar todos os clientes cadastrados;
-- Buscar um cliente específico pelo CPF;
 - Atualizar os dados de um cliente já cadastrado;
 - Excluir um cliente.
 
 **Gestão de profissionais**
 - Cadastrar profissionais, definindo especialidade e o tempo médio de duração de cada consulta;
 - Listar todos os profissionais cadastrados;
-- Buscar um profissional específico pelo CPF;
 - Atualizar os dados de um profissional já cadastrado;
 - Excluir um profissional.
 
