@@ -10,8 +10,6 @@ import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
 import java.time.temporal.IsoFields;
-import java.time.temporal.WeekFields;
-import java.util.Locale;
 
 /**
  * DTO for {@link com.compex.grupo5.model.HorarioDisponivel}

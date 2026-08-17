@@ -5,7 +5,6 @@ import com.compex.grupo5.model.Agendamento;
 import com.compex.grupo5.model.Cliente;
 import com.compex.grupo5.model.Profissional;
 import io.hypersistence.utils.hibernate.type.range.Range;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 

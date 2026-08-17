@@ -85,12 +85,4 @@ public class AgendamentoController {
                 HttpStatus.CREATED
         );
     }
-
-    public record Listar(
-            @NotNull @Pattern(regexp = "^\\d{11}$", message = "Formato de CPF inválido")
-            String cpfProfissional,
-            @NotNull Integer ano,
-            @NotNull Integer numeroSemana
-    ) {
-    }
 }
