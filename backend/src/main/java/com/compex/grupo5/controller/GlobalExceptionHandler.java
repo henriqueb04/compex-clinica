@@ -1,6 +1,8 @@
 package com.compex.grupo5.controller;
 
-import com.compex.grupo5.exception.TimeRangeConflictException;
+
+import com.compex.grupo5.exception.*;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -45,6 +47,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(AgendamentoNotFoundException.class)
+    public ResponseEntity<String> agendamentoNaoEncontrado(AgendamentoNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
