@@ -8,6 +8,7 @@ import {
   ScrollArea,
   Stack,
   Title,
+  Text,
   Table,
   Select,
 } from "@mantine/core";
@@ -19,9 +20,15 @@ import { XCircleIcon } from "@phosphor-icons/react";
 import dayjs, { type Dayjs } from "dayjs";
 import { v7 as uuidv7 } from "uuid";
 import api from "./api";
-import { Especialidades, type Agendamento, type Horario, type Profissional } from "./tipos";
+import {
+  Especialidades,
+  type Agendamento,
+  type Horario,
+  type Profissional,
+} from "./tipos";
 import ProfissionalPicker from "./components/ProfissionalPicker";
 import MarcarFrame from "./components/MarcarFrame";
+import { modals } from "@mantine/modals";
 
 const BACK_COLOR = "gray";
 const SELECTED_COLOR = "yellow";
@@ -272,7 +279,35 @@ function Agendamentos() {
                     )}
                   {agens?.[selectedEvent]?.clienteNome != null && (
                     <ActionIcon
-                      // onClick={() => deletarEvento(selectedEvent)}
+                      onClick={async () => {
+                        modals.openConfirmModal({
+                          title: "Cancelar agendamento?",
+                          children: (
+                            <Text>
+                              Tem certeza que quer cancelar esse agendamento?
+                            </Text>
+                          ),
+                          onConfirm: async () => {
+                            try {
+                              await api.patch(
+                                `/agendamentos/${agens[selectedEvent].id!}/cancelar`
+                              );
+                            } catch (err) {
+                              notifications.show({
+                                title: "Erro",
+                                // @ts-ignore
+                                message: `${err.message}${(err.cause !== undefined && ` "${err.cause}"`) || ""}`,
+                                color: "red",
+                              });
+                            }
+                            modals.closeAll();
+                            refetchAgendamentos();
+                            refetchHorarios();
+                          },
+                          labels: { confirm: "Sim, cancelar", cancel: "Não, manter" },
+                          confirmProps: { color: "red" },
+                        });
+                      }}
                       variant="outline"
                       color="red"
                       aria-label="Deletar horário"
