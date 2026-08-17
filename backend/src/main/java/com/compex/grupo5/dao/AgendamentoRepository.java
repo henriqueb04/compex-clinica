@@ -31,7 +31,6 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             @Param("agora") ZonedDateTime agora
     );
 
-
     /*
      * Retorna todos os agendamentos de um cliente específico.
      */
@@ -46,7 +45,6 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             @Param("cpf") String cpf
     );
 
-
     /*
      * Retorna todos os agendamentos de um profissional específico.
      */
@@ -60,7 +58,6 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     List<Agendamento> findByProfissionalCpf(
             @Param("cpf") String cpf
     );
-
 
     /*
      * Busca um agendamento por ID já com cliente e profissional carregados.
