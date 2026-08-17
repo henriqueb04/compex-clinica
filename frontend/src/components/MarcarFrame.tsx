@@ -172,6 +172,7 @@ function MarcarFrame({
         value={cpfInput}
         setValue={setCpfInput}
         loading={clienteLoading}
+        label="CPF do cliente"
       />
       <Button
         variant="light"
