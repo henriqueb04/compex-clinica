@@ -30,6 +30,7 @@ class ProfissionalServiceTest {
         profissionalService = new ProfissionalService(profissionalRepository);
     }
 
+
     /**
      * Testa o cadastro de um profissional com dados válidos.
      *

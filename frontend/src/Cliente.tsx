@@ -188,6 +188,15 @@ function Cliente() {
         },
     });
 
+    const clientesOrdenados = [...(clientes ?? [])].sort(
+        (a, b) =>
+            a.nomeCompleto.localeCompare(
+                b.nomeCompleto,
+                "pt-BR",
+                { sensitivity: "base" }
+            )
+    );
+
     /*
      * Cadastra um novo cliente.
      */
@@ -491,7 +500,7 @@ function Cliente() {
                     </Table.Thead>
 
                     <Table.Tbody>
-                        {clientes?.map((cliente) => (
+                        {clientesOrdenados.map((cliente) => (
                             <Table.Tr key={cliente.cpf}>
                                 <Table.Td>
                                     {formatarCpf(cliente.cpf)}
