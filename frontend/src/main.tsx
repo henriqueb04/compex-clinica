@@ -9,14 +9,14 @@ import "@mantine/dates/styles.css";
 import "@mantine/schedule/styles.css";
 import "@mantine/notifications/styles.css";
 import dayjs from "dayjs";
-import weekOfYear from "dayjs/plugin/weekOfYear";
+import isoWeek from "dayjs/plugin/isoWeek"
 import timezone from "dayjs/plugin/timezone";
 import customParserFormat from "dayjs/plugin/customParseFormat";
 import utc from "dayjs/plugin/utc";
 import "./global.css";
 import App from "./App.tsx";
 
-dayjs.extend(weekOfYear);
+dayjs.extend(isoWeek);
 dayjs.extend(timezone);
 dayjs.extend(utc);
 dayjs.extend(customParserFormat);

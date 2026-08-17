@@ -14,12 +14,13 @@ import {
   NavLink as MantineLink,
   type NavLinkProps,
 } from "@mantine/core";
-import { ClockIcon, HouseIcon, ListBulletsIcon, UsersIcon } from "@phosphor-icons/react";
+import { CalendarDotsIcon, ClockIcon, HouseIcon, ListBulletsIcon, UsersIcon } from "@phosphor-icons/react";
 import Home from "./Home";
 import "./App.css";
 import Listagem from "./Listagem";
 import Horarios from "./Horarios";
 import Cliente from "./Cliente";
+import Agendamentos from "./Agendamentos";
 
 function NavLink({
   href,
@@ -63,6 +64,11 @@ function App() {
             label="Definir horários de atendimento"
             leftSection={<ClockIcon size={16} />}
           />
+          <NavLink
+            href="/agendamentos"
+            label="Marcar agendamentos"
+            leftSection={<CalendarDotsIcon size={16} />}
+          />
         </Drawer>
 
         <Center className="centro">
@@ -73,6 +79,7 @@ function App() {
                 <Route path="/listagem" element={<Listagem />} />
                 <Route path="/horarios" element={<Horarios />} />
                 <Route path="/clientes" element={<Cliente />} />
+                <Route path="/agendamentos" element={<Agendamentos />} />
               </Route>
             </Routes>
           </Card>
