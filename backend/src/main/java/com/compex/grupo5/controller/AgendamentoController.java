@@ -68,12 +68,13 @@ public class AgendamentoController {
         return ResponseEntity.ok(dto);
     }
 
-    @PostMapping("/profissional")
-    public ResponseEntity<List<AgendamentoDto>> getAgendamentos(@RequestBody @Valid Listar listar) {
-        return new ResponseEntity<>(
-                agendamentoService.agendamentosProfissionalEmSemana(listar.cpfProfissional, listar.ano,
-                        listar.numeroSemana),
-                HttpStatus.OK
+    @GetMapping("/profissional/{cpf}/semana")
+    public ResponseEntity<List<AgendamentoDto>> getAgendamentosSemana(
+            @PathVariable @Pattern(regexp = "^\\d{11}$") String cpf,
+            @RequestParam @NotNull Integer ano,
+            @RequestParam @NotNull Integer numeroSemana) {
+        return ResponseEntity.ok(
+                agendamentoService.agendamentosProfissionalEmSemana(cpf, ano, numeroSemana)
         );
     }
 

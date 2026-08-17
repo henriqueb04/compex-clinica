@@ -24,7 +24,7 @@ public record AgendamentoDto(
         String clienteNome,
         @NotNull @Pattern(regexp = "^\\d{11}$", message = "Formato de CPF inválido")
         String profissionalCpf,
-        @NotNull @NotBlank String profissionalNome,
+        String profissionalNome,
         @NotNull ZonedDateTime comeco,
         @NotNull ZonedDateTime fim,
         @NotNull StatusAgendamento statusAgendamento
