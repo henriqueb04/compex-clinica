@@ -8,6 +8,16 @@ export const DayOfWeek = [
   "SATURDAY",
 ];
 
+export const Especialidades = [
+  "Esteticista",
+  "Biomedico",
+  "Enfermeiro",
+  "Fisioterapeuta",
+  "Nutricionista",
+  "Dermatologista",
+  "Cirurgiao Plastico",
+];
+
 export const PessoaSexo = ["MASCULINO", "FEMININO", "OUTRO"];
 
 export const StatusAgendamento = ["AGENDADO", "CANCELADO", "CONCLUIDO"];

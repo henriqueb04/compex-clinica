@@ -9,16 +9,17 @@ import {
   Stack,
   Title,
   Table,
+  Select,
 } from "@mantine/core";
 import { WeekView, type ScheduleSingleEventData } from "@mantine/schedule";
 import { DatePicker } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
 import { useQuery } from "@tanstack/react-query";
-import { TrashIcon } from "@phosphor-icons/react";
+import { XCircleIcon } from "@phosphor-icons/react";
 import dayjs, { type Dayjs } from "dayjs";
 import { v7 as uuidv7 } from "uuid";
 import api from "./api";
-import { type Agendamento, type Horario, type Profissional } from "./tipos";
+import { Especialidades, type Agendamento, type Horario, type Profissional } from "./tipos";
 import ProfissionalPicker from "./components/ProfissionalPicker";
 import MarcarFrame from "./components/MarcarFrame";
 
@@ -76,6 +77,7 @@ function Agendamentos() {
   );
   const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
   const [profissional, setProfissional] = useState<Profissional | null>(null);
+  const [especialidade, setEspecialidade] = useState<string | null>(null);
 
   const dataStr = date.format("YYYY-MM-DD");
   const numeroSemana = date.isoWeek();
@@ -171,7 +173,14 @@ function Agendamentos() {
         <Title order={1} style={{ flexGrow: 1 }}>
           Agendamento
         </Title>
+        <Select
+          placeholder="Especialidades..."
+          value={especialidade}
+          onChange={setEspecialidade}
+          data={Especialidades}
+        />
         <ProfissionalPicker
+          especialidade={especialidade}
           value={profissional}
           onChange={(a) => {
             clearWeekState();
@@ -268,7 +277,7 @@ function Agendamentos() {
                       color="red"
                       aria-label="Deletar horário"
                     >
-                      <TrashIcon size={18} />
+                      <XCircleIcon size={18} />
                     </ActionIcon>
                   )}
                 </Stack>
